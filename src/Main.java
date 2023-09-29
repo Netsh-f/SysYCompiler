@@ -1,5 +1,14 @@
+import Compiler.Lexer.Lexer;
+import Utils.FileHelper;
+import Utils.OutputHelper;
+
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        String source = FileHelper.fileToString("testfile.txt");
+
+        var list = new Lexer(source).run();
+
+        OutputHelper.LexerOutput(list);
     }
 }

@@ -3,17 +3,30 @@ package Compiler.Lexer;
 
 import Utils.CharHelper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Lexer {
     private String source;
     private int pos;
     private int lineNum;
     private StringBuilder token;
 
-    Lexer(String source) {
+    public Lexer(String source) {
         this.source = source;
         this.pos = 0;
         this.lineNum = 1;
         this.token = new StringBuilder();
+    }
+
+    public List<Token> run() {
+        List<Token> list = new ArrayList<>();
+        Token newToken = next();
+        while (newToken.lexType() != LexType.LEXER_END) {
+            list.add(newToken);
+            newToken = next();
+        }
+        return list;
     }
 
     private void moveToNotBlankChar() {
@@ -58,7 +71,7 @@ public class Lexer {
     public Token next() {
         token.setLength(0);
         moveToNotBlankChar();
-        if (pos > source.length()) {
+        if (pos >= source.length()) {
             return getToken(LexType.LEXER_END);
         }
         char c = getNextChar();
