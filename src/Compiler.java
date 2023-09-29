@@ -3,7 +3,7 @@ import Utils.FileHelper;
 import Utils.OutputHelper;
 
 
-public class Main {
+public class Compiler {
     public static void main(String[] args) {
         String source = FileHelper.fileToString("testfile.txt");
 

@@ -1,4 +1,4 @@
-package Compiler.Lexer;
+package Enums;
 
 public enum LexType {
     IDENFR,
