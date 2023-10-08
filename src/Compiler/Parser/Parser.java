@@ -123,11 +123,10 @@ public class Parser {
         List<Decl> declList = new ArrayList<>();
         List<FuncDef> funcDefList = new ArrayList<>();
         MainFuncDef mainFuncDef = null;
-        while (getLexType() == LexType.CONSTTK ||
-                (getLexType() == LexType.INTTK && getLexType(2) != LexType.LPARENT)) {
+        while (getLexType() == LexType.CONSTTK || (getLexType() == LexType.INTTK && getLexType(2) != LexType.LPARENT)) {
             declList.add(decl());
         }
-        while (getLexType() == LexType.INTTK && getLexType(1) != LexType.MAINTK && getLexType(2) == LexType.LPARENT) {
+        while (getLexType() == LexType.VOIDTK || (getLexType() == LexType.INTTK && getLexType(1) != LexType.MAINTK && getLexType(2) == LexType.LPARENT)) {
             funcDefList.add(funcDef());
         }
         if (getLexType(1) == LexType.MAINTK) {
@@ -484,8 +483,7 @@ public class Parser {
         List<AddExp> addExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         addExpList.add(addExp());
-        while (getLexType() == LexType.LSS || getLexType() == LexType.LEQ ||
-                getLexType() == LexType.GRE || getLexType() == LexType.GEQ) {
+        while (getLexType() == LexType.LSS || getLexType() == LexType.LEQ || getLexType() == LexType.GRE || getLexType() == LexType.GEQ) {
             opLexTypeList.add(getLexType());
             outputAppend("<RelExp>");
             next();
@@ -724,14 +722,17 @@ public class Parser {
     }
 
     private UnaryExp unaryExp() {
-        // UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')'
-        // | UnaryOp UnaryExp
+        // UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')' | UnaryOp UnaryExp
         Ident ident = null;
         FuncRParams funcRParams = null;
         UnaryOp unaryOp = null;
         UnaryExp unaryExp = null;
         PrimaryExp primaryExp = null;
-        if (getLexType(1) == LexType.LPARENT) {
+        if (getLexType() == LexType.PLUS || getLexType() == LexType.MINU || getLexType() == LexType.NOT) {
+            //UnaryExp → UnaryOp UnaryExp
+            unaryOp = unaryOp();
+            unaryExp = unaryExp();
+        } else if (getLexType(1) == LexType.LPARENT) {
             //UnaryExp → Ident '(' [FuncRParams] ')'
             ident = ident();
             if (getLexType() == LexType.LPARENT) {
@@ -744,10 +745,6 @@ public class Parser {
             if (getLexType() == LexType.RPARENT) {
                 next();
             }
-        } else if (getLexType() == LexType.PLUS || getLexType() == LexType.MINU || getLexType() == LexType.NOT) {
-            //UnaryExp → UnaryOp UnaryExp
-            unaryOp = unaryOp();
-            unaryExp = unaryExp();
         } else {
             //UnaryExp → PrimaryExp
             primaryExp = primaryExp();
