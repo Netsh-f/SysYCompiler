@@ -283,6 +283,7 @@ public class Parser {
                 next();
             }
             while (getLexType() == LexType.LBRACK) {
+                next();
                 constExpList.add(constExp());
                 if (getLexType() == LexType.RBRACK) {
                     next();
