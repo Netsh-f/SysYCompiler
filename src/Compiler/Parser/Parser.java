@@ -25,7 +25,7 @@ public class Parser {
 
     public CompUnit run() {
         var ret = compUnit();
-        if(debug){
+        if (debug) {
             OutputHelper.ParserOutput(output);
         }
         return ret;
@@ -348,10 +348,17 @@ public class Parser {
         if (getLexType() != LexType.LBRACE) {
             exp = exp();
         } else {
-            initValList.add(initVal());
-            while (getLexType() == LexType.COMMA) {
-                next();
+            next();
+            if (getLexType() != LexType.RBRACE) {
+                // [ InitVal { ',' InitVal } ]存在
                 initValList.add(initVal());
+                while (getLexType() == LexType.COMMA) {
+                    next();
+                    initValList.add(initVal());
+                }
+            }
+            if (getLexType() == LexType.RBRACE) {
+                next();
             }
         }
         output.append("<InitVal>\n");
