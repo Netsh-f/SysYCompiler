@@ -4,7 +4,7 @@
 */
 package Compiler.Parser.Nodes;
 
-import Enums.LexType;
+import Compiler.Lexer.LexType;
 
 public record UnaryOp(LexType opType) {
 }

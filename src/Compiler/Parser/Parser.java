@@ -4,10 +4,10 @@ import Compiler.Parser.Nodes.*;
 import Compiler.Lexer.Token;
 import Compiler.Parser.Nodes.Number;
 import Compiler.Parser.Nodes.StmtNode.*;
-import Enums.LexType;
+import Compiler.Lexer.LexType;
 import Enums.StmtLValExpType;
+import Utils.OutputHelper;
 
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,12 +15,29 @@ public class Parser {
     private List<Token> tokens;
     private int pos;
 
+    private StringBuilder output = new StringBuilder();
+
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.pos = 0;
     }
 
+    public CompUnit run() {
+        var ret = compUnit();
+        OutputHelper.ParserOutput(output); // Task Output
+        return ret;
+    }
+
+    private void outputAppend(String s) {
+        output.append(s + "\n");
+    }
+
+    private void outputAppendToken() {
+        outputAppend(tokens.get(pos).toString());
+    }
+
     private void next() {
+        outputAppendToken();
         if (pos < tokens.size() - 1) {
             pos++;
         }
@@ -51,6 +68,8 @@ public class Parser {
     }
 
     private AddExp addExp() {
+        // AddExp → MulExp | AddExp ('+' | '−') MulExp
+        //改写为 AddExp -> MulExp { ('+' | '−') MulExp } 遍历时要改成原来的语法书形状
         List<MulExp> mulExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         mulExpList.add(mulExp());
@@ -59,10 +78,12 @@ public class Parser {
             next();
             mulExpList.add(mulExp());
         }
+        outputAppend("<AddExp>");
         return new AddExp(mulExpList, opLexTypeList);
     }
 
     private BlockItem blockItem() {
+        //  BlockItem → Decl | Stmt
         Decl decl = null;
         Stmt stmt = null;
         if (getLexType() == LexType.CONSTTK || getLexType() == LexType.INTTK) {
@@ -74,6 +95,7 @@ public class Parser {
     }
 
     private Block block() {
+        // Block → '{' { BlockItem } '}'
         List<BlockItem> blockItemList = new ArrayList<>();
         if (getLexType() == LexType.LBRACE) {
             next();
@@ -84,10 +106,12 @@ public class Parser {
         if (getLexType() == LexType.RBRACE) {
             next();
         }
+        output.append("<Block>\n");
         return new Block(blockItemList);
     }
 
     private BType bType() {
+        //BType → 'int'
         if (getLexType() == LexType.INTTK) {
             next();
         }
@@ -95,24 +119,28 @@ public class Parser {
     }
 
     private CompUnit compUnit() {
+        //CompUnit → {Decl} {FuncDef} MainFuncDef
         List<Decl> declList = new ArrayList<>();
         List<FuncDef> funcDefList = new ArrayList<>();
         MainFuncDef mainFuncDef = null;
-        while (getLexType() == LexType.VOIDTK ||
+        while (getLexType() == LexType.CONSTTK ||
                 (getLexType() == LexType.INTTK && getLexType(2) != LexType.LPARENT)) {
             declList.add(decl());
         }
-        while (getLexType(2) == LexType.LPARENT) {
+        while (getLexType() == LexType.INTTK && getLexType(1) != LexType.MAINTK && getLexType(2) == LexType.LPARENT) {
             funcDefList.add(funcDef());
         }
         if (getLexType(1) == LexType.MAINTK) {
             mainFuncDef = mainFuncDef();
         }
+        output.append("<CompUnit>\n");
         return new CompUnit(declList, funcDefList, mainFuncDef);
     }
 
     private Cond cond() {
-        return new Cond(lOrExp());
+        var lOrExp = lOrExp();
+        output.append("<Cond>\n");
+        return new Cond(lOrExp);
     }
 
     private ConstDecl constDecl() {
@@ -130,6 +158,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<ConstDecl>\n");
         return new ConstDecl(bType, constDefList);
     }
 
@@ -137,6 +166,7 @@ public class Parser {
         Ident ident = null;
         List<ConstExp> constExpList = new ArrayList<>();
         ConstInitVal constInitVal = null;
+        ident = ident();
         while (getLexType() == LexType.LBRACK) {
             next();
             constExpList.add(constExp());
@@ -148,11 +178,14 @@ public class Parser {
             next();
         }
         constInitVal = constInitVal();
+        output.append("<ConstDef>\n");
         return new ConstDef(ident, constExpList, constInitVal);
     }
 
     private ConstExp constExp() {
-        return new ConstExp(addExp());
+        var addExp = addExp();
+        output.append("<ConstExp>\n");
+        return new ConstExp(addExp);
     }
 
     private ConstInitVal constInitVal() {
@@ -173,6 +206,7 @@ public class Parser {
                 next();
             }
         }
+        output.append("<ConstInitVal>\n");
         return new ConstInitVal(constExp, constInitValList);
     }
 
@@ -196,11 +230,14 @@ public class Parser {
             next();
             relExpList.add(relExp());
         }
+        output.append("<EqExp>\n");
         return new EqExp(relExpList, opLexTypeList);
     }
 
     private Exp exp() {
-        return new Exp(addExp());
+        var addExp = addExp();
+        output.append("<Exp>\n");
+        return new Exp(addExp);
     }
 
     private ForStmt forStmt() {
@@ -209,6 +246,7 @@ public class Parser {
             next();
         }
         Exp exp = exp();
+        output.append("<ForStmt>\n");
         return new ForStmt(lVal, exp);
     }
 
@@ -226,6 +264,7 @@ public class Parser {
             next();
         }
         Block block = block();
+        output.append("<FuncDef>\n");
         return new FuncDef(funcType, ident, funcFParams, block);
     }
 
@@ -252,6 +291,7 @@ public class Parser {
                 next();
             }
         }
+        output.append("<FuncFParam>\n");
         return new FuncFParam(bType, ident, isArray, constExpList);
     }
 
@@ -263,6 +303,7 @@ public class Parser {
             next();
             funcFParamList.add(funcFParam());
         }
+        output.append("<FuncFParams>\n");
         return new FuncFParams(funcFParamList);
     }
 
@@ -274,6 +315,7 @@ public class Parser {
             next();
             expList.add(exp());
         }
+        output.append("<FuncRParams>\n");
         return new FuncRParams(expList);
     }
 
@@ -283,6 +325,7 @@ public class Parser {
         if (getLexType() == LexType.VOIDTK || getLexType() == LexType.INTTK) {
             lexType = getLexType();
         }
+        output.append("<FuncType>\n");
         return new FuncType(lexType);
     }
 
@@ -308,6 +351,7 @@ public class Parser {
                 initValList.add(initVal());
             }
         }
+        output.append("<InitVal>\n");
         return new InitVal(exp, initValList);
     }
 
@@ -320,6 +364,7 @@ public class Parser {
             next();
             eqExpList.add(eqExp());
         }
+        output.append("<LAndExp>\n");
         return new LAndExp(eqExpList);
     }
 
@@ -332,6 +377,7 @@ public class Parser {
             next();
             lAndExpList.add(lAndExp());
         }
+        output.append("<LOrExp>\n");
         return new LOrExp(lAndExpList);
     }
 
@@ -346,6 +392,7 @@ public class Parser {
                 next();
             }
         }
+        output.append("<LVal>\n");
         return new LVal(ident, expList);
     }
 
@@ -362,7 +409,9 @@ public class Parser {
         if (getLexType() == LexType.RPARENT) {
             next();
         }
-        return new MainFuncDef(block());
+        var block = block();
+        output.append("<MainFuncDef>\n");
+        return new MainFuncDef(block);
     }
 
     private MulExp mulExp() {
@@ -376,6 +425,7 @@ public class Parser {
             next();
             unaryExpList.add(unaryExp());
         }
+        output.append("<MulExp>\n");
         return new MulExp(unaryExpList, opLexTypeList);
     }
 
@@ -387,8 +437,11 @@ public class Parser {
                 num = Integer.parseInt(getString());
             } catch (NumberFormatException e) {
                 num = 0;
+            } finally {
+                next();
             }
         }
+        output.append("<Number>\n");
         return new Number(num);
     }
 
@@ -408,6 +461,7 @@ public class Parser {
         } else {
             lVal = lVal();
         }
+        output.append("<PrimaryExp>\n");
         return new PrimaryExp(exp, lVal, number);
     }
 
@@ -423,6 +477,7 @@ public class Parser {
             next();
             addExpList.add(addExp());
         }
+        output.append("<RelExp>\n");
         return new RelExp(addExpList, opLexTypeList);
     }
 
@@ -456,7 +511,9 @@ public class Parser {
     }
 
     private StmtBlock stmtBlock() {
-        return new StmtBlock(block());
+        var block = block();
+        output.append("<Stmt>\n");
+        return new StmtBlock(block);
     }
 
     private StmtIf stmtIf() {
@@ -478,6 +535,7 @@ public class Parser {
             next();
             elseStmt = stmt();
         }
+        output.append("<Stmt>\n");
         return new StmtIf(cond, stmt, elseStmt);
     }
 
@@ -514,6 +572,7 @@ public class Parser {
             next();
         }
         Stmt stmt = stmt();
+        output.append("<Stmt>\n");
         return new StmtFor(forStmt1, cond, forStmt3, stmt);
     }
 
@@ -524,6 +583,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<Stmt>\n");
         return new StmtBreak();
     }
 
@@ -534,6 +594,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<Stmt>\n");
         return new StmtContinue();
     }
 
@@ -549,6 +610,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<Stmt>\n");
         return new StmtReturn(exp);
     }
 
@@ -576,6 +638,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<Stmt>\n");
         return new StmtPrint(formatString, expList);
     }
 
@@ -642,6 +705,7 @@ public class Parser {
                 next();
             }
         }
+        output.append("<Stmt>\n");
         return new StmtLValExp(type, lVal, exp);
     }
 
@@ -674,6 +738,7 @@ public class Parser {
             //UnaryExp → PrimaryExp
             primaryExp = primaryExp();
         }
+        output.append("<UnaryExp>\n");
         return new UnaryExp(primaryExp, ident, funcRParams, unaryOp, unaryExp);
     }
 
@@ -683,6 +748,7 @@ public class Parser {
             type = getLexType();
             next();
         }
+        output.append("<UnaryOp>\n");
         return new UnaryOp(type);
     }
 
@@ -698,6 +764,7 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
+        output.append("<VarDecl>\n");
         return new VarDecl(bType, varDefList);
     }
 
@@ -717,8 +784,7 @@ public class Parser {
             next();
             initVal = initVal();
         }
+        output.append("<VarDef>\n");
         return new VarDef(ident, constExpList, initVal);
     }
-
-
 }
