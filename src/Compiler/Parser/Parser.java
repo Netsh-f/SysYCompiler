@@ -14,6 +14,7 @@ import java.util.List;
 public class Parser {
     private List<Token> tokens;
     private int pos;
+    private final boolean debug = true;
 
     private StringBuilder output = new StringBuilder();
 
@@ -24,7 +25,9 @@ public class Parser {
 
     public CompUnit run() {
         var ret = compUnit();
-        OutputHelper.ParserOutput(output); // Task Output
+        if(debug){
+            OutputHelper.ParserOutput(output);
+        }
         return ret;
     }
 
@@ -32,12 +35,8 @@ public class Parser {
         output.append(s + "\n");
     }
 
-    private void outputAppendToken() {
-        outputAppend(tokens.get(pos).toString());
-    }
-
     private void next() {
-        outputAppendToken();
+        outputAppend(tokens.get(pos).toString());
         if (pos < tokens.size() - 1) {
             pos++;
         }
@@ -75,6 +74,7 @@ public class Parser {
         mulExpList.add(mulExp());
         while (getLexType() == LexType.PLUS || getLexType() == LexType.MINU) {
             opLexTypeList.add(getLexType());
+            outputAppend("<AddExp>");
             next();
             mulExpList.add(mulExp());
         }
@@ -227,10 +227,11 @@ public class Parser {
         relExpList.add(relExp());
         while (getLexType() == LexType.EQL || getLexType() == LexType.NEQ) {
             opLexTypeList.add(getLexType());
+            outputAppend("<EqExp>");
             next();
             relExpList.add(relExp());
         }
-        output.append("<EqExp>\n");
+        outputAppend("<EqExp>");
         return new EqExp(relExpList, opLexTypeList);
     }
 
@@ -251,6 +252,7 @@ public class Parser {
     }
 
     private FuncDef funcDef() {
+        //FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
         FuncType funcType = funcType();
         Ident ident = ident();
         FuncFParams funcFParams = null;
@@ -324,6 +326,7 @@ public class Parser {
         LexType lexType = null;
         if (getLexType() == LexType.VOIDTK || getLexType() == LexType.INTTK) {
             lexType = getLexType();
+            next();
         }
         output.append("<FuncType>\n");
         return new FuncType(lexType);
@@ -361,10 +364,11 @@ public class Parser {
         List<EqExp> eqExpList = new ArrayList<>();
         eqExpList.add(eqExp());
         while (getLexType() == LexType.AND) {
+            outputAppend("<LAndExp>");
             next();
             eqExpList.add(eqExp());
         }
-        output.append("<LAndExp>\n");
+        outputAppend("<LAndExp>");
         return new LAndExp(eqExpList);
     }
 
@@ -374,10 +378,11 @@ public class Parser {
         List<LAndExp> lAndExpList = new ArrayList<>();
         lAndExpList.add(lAndExp());
         while (getLexType() == LexType.OR) {
+            outputAppend("<LOrExp>");
             next();
             lAndExpList.add(lAndExp());
         }
-        output.append("<LOrExp>\n");
+        outputAppend("<LOrExp>");
         return new LOrExp(lAndExpList);
     }
 
@@ -422,10 +427,11 @@ public class Parser {
         unaryExpList.add(unaryExp());
         while (getLexType() == LexType.MULT || getLexType() == LexType.DIV || getLexType() == LexType.MOD) {
             opLexTypeList.add(getLexType());
+            outputAppend("<MulExp>");
             next();
             unaryExpList.add(unaryExp());
         }
-        output.append("<MulExp>\n");
+        outputAppend("<MulExp>");
         return new MulExp(unaryExpList, opLexTypeList);
     }
 
@@ -474,10 +480,11 @@ public class Parser {
         while (getLexType() == LexType.LSS || getLexType() == LexType.LEQ ||
                 getLexType() == LexType.GRE || getLexType() == LexType.GEQ) {
             opLexTypeList.add(getLexType());
+            outputAppend("<RelExp>");
             next();
             addExpList.add(addExp());
         }
-        output.append("<RelExp>\n");
+        outputAppend("<RelExp>");
         return new RelExp(addExpList, opLexTypeList);
     }
 
