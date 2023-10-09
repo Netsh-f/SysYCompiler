@@ -9,5 +9,4 @@ import Compiler.Lexer.LexType;
 import java.util.List;
 
 public record AddExp(List<MulExp> mulExpList, List<LexType> opLexTypeList) {
-
 }

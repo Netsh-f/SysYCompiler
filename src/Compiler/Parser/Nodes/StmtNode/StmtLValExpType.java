@@ -1,4 +1,4 @@
-package Enums;
+package Compiler.Parser.Nodes.StmtNode;
 
 public enum StmtLValExpType {
     LVALEXP,

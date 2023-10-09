@@ -5,7 +5,7 @@ import Compiler.Lexer.Token;
 import Compiler.Parser.Nodes.Number;
 import Compiler.Parser.Nodes.StmtNode.*;
 import Compiler.Lexer.LexType;
-import Enums.StmtLValExpType;
+import Compiler.Parser.Nodes.StmtNode.StmtLValExpType;
 import Utils.OutputHelper;
 
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class Parser {
 
     private AddExp addExp() {
         // AddExp → MulExp | AddExp ('+' | '−') MulExp
-        //改写为 AddExp -> MulExp { ('+' | '−') MulExp } 遍历时要改成原来的语法书形状
+        // 改写为 AddExp -> MulExp { ('+' | '−') MulExp } 遍历时要改成原来的语法书形状
         List<MulExp> mulExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         mulExpList.add(mulExp());
@@ -143,6 +143,7 @@ public class Parser {
     }
 
     private ConstDecl constDecl() {
+        // ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
         BType bType = null;
         List<ConstDef> constDefList = new ArrayList<>();
         if (getLexType() == LexType.CONSTTK) {
@@ -210,6 +211,7 @@ public class Parser {
     }
 
     private Decl decl() {
+        // Decl → ConstDecl | VarDecl
         ConstDecl constDecl = null;
         VarDecl varDecl = null;
         if (getLexType() == LexType.CONSTTK) {

@@ -7,7 +7,6 @@ package Compiler.Parser.Nodes.StmtNode;
 import Compiler.Parser.Nodes.Exp;
 import Compiler.Parser.Nodes.LVal;
 import Compiler.Parser.Nodes.Stmt;
-import Enums.StmtLValExpType;
 
 
 public class StmtLValExp extends Stmt {
