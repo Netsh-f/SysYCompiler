@@ -6,5 +6,5 @@ package Compiler.SymbolManager.Symbol;
 
 import java.util.List;
 
-public record FuncSymbol(FuncReturnType returnType, List<VarSymbol> paramList) {
+public record FuncSymbol(ReturnType returnType, List<VarSymbol> paramList) {
 }

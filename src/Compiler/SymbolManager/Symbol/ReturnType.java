@@ -1,6 +1,6 @@
 package Compiler.SymbolManager.Symbol;
 
-public enum FuncReturnType {
+public enum ReturnType {
     INT,
     VOID,
 }

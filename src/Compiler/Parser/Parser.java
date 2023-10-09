@@ -189,6 +189,7 @@ public class Parser {
     }
 
     private ConstInitVal constInitVal() {
+        // ConstInitVal → ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
         ConstExp constExp = null;
         List<ConstInitVal> constInitValList = new ArrayList<>();
         if (getLexType() != LexType.LBRACE) {
@@ -223,6 +224,7 @@ public class Parser {
     }
 
     private EqExp eqExp() {
+        //  EqExp → RelExp | EqExp ('==' | '!=') RelExp
         List<RelExp> relExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         relExpList.add(relExp());
