@@ -8,7 +8,7 @@ import Compiler.SymbolManager.Symbol.ReturnType;
 
 public class VisitResult {
     public ReturnType type;
-    public boolean isConst;
+    public boolean isConst = false;
     public int value;
 
     public VisitResult(ReturnType type, boolean isConst, int value) {
@@ -20,5 +20,9 @@ public class VisitResult {
     public VisitResult(ReturnType type, boolean isConst) {
         this.type = type;
         this.isConst = isConst;
+    }
+
+    public VisitResult(ReturnType type) {
+        this.type = type;
     }
 }

@@ -4,5 +4,5 @@
 */
 package Compiler.SymbolManager.Symbol;
 
-public record VarSymbolVal(int dimension, int len1, int len2, int val, int[] val1D, int[][] val2D) {
+public record VarSymbolVal(int dimension, int len1, int len2, int[][] val) {
 }

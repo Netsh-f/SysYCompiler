@@ -4,5 +4,7 @@
 */
 package Compiler.Parser.Nodes;
 
-public record Ident(String content) {
+import Compiler.Lexer.Token;
+
+public record Ident(Token token) {
 }

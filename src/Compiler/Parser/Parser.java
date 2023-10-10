@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Parser {
-    private List<Token> tokens;
+    private final List<Token> tokens;
     private int pos;
     private final boolean debug = true;
 
@@ -64,6 +64,13 @@ public class Parser {
         } else {
             return "";
         }
+    }
+
+    private Token getToken() {
+        if (pos < tokens.size()) {
+            return tokens.get(pos);
+        }
+        return null;
     }
 
     private AddExp addExp() {
@@ -337,12 +344,12 @@ public class Parser {
     }
 
     private Ident ident() {
-        String content = null;
+        Token token = null;
         if (getLexType() == LexType.IDENFR) {
-            content = getString();
+            token = getToken();
             next();
         }
-        return new Ident(content);
+        return new Ident(token);
     }
 
     private InitVal initVal() {
