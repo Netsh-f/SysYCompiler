@@ -139,9 +139,9 @@ public class Visitor {
                 // 默认第二维长度均相等
                 return new VarSymbolVal(2, varSymbolValList.size(), varSymbolValList.get(0).val1D().length, 0, null, val2D);
             }
-        } else {
-            // error
+            // 没有三维及以上
         }
+        // error
         return null;
     }
 
@@ -160,10 +160,13 @@ public class Visitor {
     }
 
     private VisitResult visit(Exp exp) {
-        return null;
+        //  Exp → AddExp
+        return visit(exp.addExp());
     }
 
     private void visit(ForStmt forStmt) {
+        // ForStmt → LVal '=' Exp
+
     }
 
     private void visit(FuncDef funcDef) {

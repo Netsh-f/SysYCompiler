@@ -2,6 +2,8 @@ package Compiler.Lexer;
 
 
 import Utils.CharHelper;
+import Utils.Error.ErrorType;
+import Utils.OutputHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,23 +107,20 @@ public class Lexer {
                     if (c == 'd') {
                         continue;
                     } else {
-                        backwardPos();
-                        return getToken(LexType.LEXER_ERROR);
+                        OutputHelper.addError(ErrorType.FORMAT_STRING_ERROR, lineNum, "'%" + c + "' is illegal in <FormatString>");
                     }
                 } else if (c == '\\') {
                     c = tokenAppendGetNextChar(c);
                     if (c == 'n') {
                         continue;
                     } else {
-                        backwardPos();
-                        return getToken(LexType.LEXER_ERROR);
+                        OutputHelper.addError(ErrorType.FORMAT_STRING_ERROR, lineNum, "'\\" + c + "' is illegal in <FormatString>");
                     }
                 } else if (c == '"') {
                     tokenAppend(c);
                     return getToken(LexType.STRCON);
                 } else {
-                    backwardPos();
-                    return getToken(LexType.LEXER_ERROR);
+                    OutputHelper.addError(ErrorType.FORMAT_STRING_ERROR, lineNum, "'" + c + "' is illegal in <FormatString>");
                 }
             }
         } else if (c == '&') {
