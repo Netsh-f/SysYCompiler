@@ -47,6 +47,10 @@ public class SymbolManager {
         return null;
     }
 
+    public FuncSymbol findFuncSymbol(String ident) {
+        return funcSymbolMap.get(ident);
+    }
+
     public boolean isVarSymbolDefined(String ident) {
         return curSymbolTable.varSymbolMap().containsKey(ident);
     }

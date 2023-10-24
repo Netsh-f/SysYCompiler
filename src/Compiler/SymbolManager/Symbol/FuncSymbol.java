@@ -4,7 +4,10 @@
 */
 package Compiler.SymbolManager.Symbol;
 
+import Compiler.SymbolManager.Symbol.ValueTypeEnum;
+import Compiler.SymbolManager.Symbol.VarSymbol;
+
 import java.util.List;
 
-public record FuncSymbol(ReturnType returnType, List<VarSymbol> paramList) {
+public record FuncSymbol(ValueTypeEnum valueTypeEnum, List<VarSymbol> paramVarSymbolList) {
 }

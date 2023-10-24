@@ -11,7 +11,7 @@ import java.util.List;
 
 public class StmtPrint extends Stmt {
     public String formatString;
-    List<Exp> expList;
+    public List<Exp> expList;
 
     public StmtPrint(String formatString, List<Exp> expList) {
         this.formatString = formatString;

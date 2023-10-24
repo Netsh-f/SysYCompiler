@@ -4,7 +4,13 @@
 */
 package Compiler.Parser.Nodes.StmtNode;
 
+import Compiler.Lexer.Token;
 import Compiler.Parser.Nodes.Stmt;
 
 public class StmtBreak extends Stmt {
+    public Token token;
+
+    public StmtBreak(Token token) {
+        this.token = token;
+    }
 }

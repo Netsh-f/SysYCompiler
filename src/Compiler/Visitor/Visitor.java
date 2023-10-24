@@ -7,20 +7,23 @@ package Compiler.Visitor;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
 import Compiler.Parser.Nodes.Number;
+import Compiler.Parser.Nodes.StmtNode.*;
 import Compiler.SymbolManager.Symbol.FuncSymbol;
-import Compiler.SymbolManager.Symbol.ReturnType;
+import Compiler.SymbolManager.Symbol.ValueType;
+import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 import Compiler.SymbolManager.Symbol.VarSymbol;
-import Compiler.SymbolManager.Symbol.VarSymbolVal;
 import Compiler.SymbolManager.SymbolManager;
 import Utils.Error.ErrorType;
 import Utils.OutputHelper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Visitor {
     private CompUnit unit;
     private SymbolManager symbolManager;
+    private int loop = 0;
 
     public Visitor(CompUnit compUnit) {
         this.unit = compUnit;
@@ -52,10 +55,7 @@ public class Visitor {
                 isConst = false;
             }
         }
-        if (isConst) {
-            return new VisitResult(ReturnType.INT, true, value);
-        }
-        return new VisitResult(ReturnType.INT, false);
+        return new VisitResult(new ValueType(ValueTypeEnum.INT, new ArrayList<>()), isConst, value);
     }
 
     private void visit(BlockItem blockItem) {
@@ -73,8 +73,8 @@ public class Visitor {
         block.blockItemList().forEach(this::visit);
     }
 
-    private void visit(BType bType) {
-        // do nothing
+    private ValueTypeEnum visit(BType bType) {
+        return ValueTypeEnum.INT;
     }
 
 
@@ -92,68 +92,52 @@ public class Visitor {
 
     private void visit(ConstDecl constDecl) {
         // ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
-        visit(constDecl.bType());
-        constDecl.constDefList().forEach(this::visit);
+        var valueTypeEnum = visit(constDecl.bType());
+        for (var constDef : constDecl.constDefList()) {
+            visit(constDef, valueTypeEnum);
+        }
     }
 
-    private void visit(ConstDef constDef) {
+    private void visit(ConstDef constDef, ValueTypeEnum valueTypeEnum) {
         // ConstDef → Ident { '[' ConstExp ']' } '=' ConstInitVal
-        var lenList = new ArrayList<Integer>();
+        var shape = new ArrayList<Integer>();
+        var values = new ArrayList<Integer>();
 
         var identToken = constDef.ident().token();
         if (symbolManager.isVarSymbolDefined(identToken.content())) {
-            OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "redefinition of '" + identToken.content() + "'");
+            OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "const redefinition of '" + identToken.content() + "'");
             return;
         }
 
         constDef.constExpList().forEach(constExp -> {
-            lenList.add(visit(constExp).value);
+            shape.add(visit(constExp).value);
         });
-        var initVal = visit(constDef.constInitVal());
 
-        if (lenList.size() == initVal.dimension()) {
-            if (initVal.dimension() == 0
-                    || (initVal.dimension() == 1 && lenList.get(0) == initVal.len1())
-                    || (initVal.dimension() == 2 && lenList.get(0) == initVal.len1() && lenList.get(1) == initVal.len2())) {
-                symbolManager.addVarSymbol(constDef.ident().token().content(), new VarSymbol(true, initVal));
-            }
-            // 长度不匹配
-        }
-        // 维度不匹配
+        visit(constDef.constInitVal(), shape, values); // 在这里面进行维数及其长度对比，和数值赋值
+
+        symbolManager.addVarSymbol(identToken.content(), new VarSymbol(new ValueType(valueTypeEnum, shape), true, values));
     }
 
     private VisitResult visit(ConstExp constExp) {
         return visit(constExp.addExp());
     }
 
-    private VarSymbolVal visit(ConstInitVal constInitVal) {
+    private void visit(ConstInitVal constInitVal, List<Integer> shape, List<Integer> values) {
         //  ConstInitVal → ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
         if (constInitVal.constExp() != null) {
             var result = visit(constInitVal.constExp());
-            return new VarSymbolVal(0, 0, 0, new int[][]{{result.value}});
+            values.add(result.value);
         } else if (!constInitVal.constInitValList().isEmpty()) {
-            var varSymbolValList = new ArrayList<VarSymbolVal>();
-            for (var civ : constInitVal.constInitValList()) {
-                varSymbolValList.add(visit(civ));
-            }
-            if (varSymbolValList.get(0).dimension() == 0) {
-                int[] val1D = new int[varSymbolValList.size()];
-                for (int i = 0; i < varSymbolValList.size(); i++) {
-                    val1D[i] = varSymbolValList.get(i).val()[0][0];
+            if (shape.get(0) == constInitVal.constInitValList().size()) {
+                for (ConstInitVal constInitVal1 : constInitVal.constInitValList()) {
+                    var newShape = new ArrayList<>(shape);
+                    newShape.remove(0);
+                    visit(constInitVal1, newShape, values); // 传入去除当前维度之后的shape
                 }
-                return new VarSymbolVal(1, varSymbolValList.size(), 0, new int[][]{val1D});
-            } else if (varSymbolValList.get(0).dimension() == 1) {
-                int[][] val2D = new int[varSymbolValList.size()][];
-                for (int i = 0; i < varSymbolValList.size(); i++) {
-                    val2D[i] = varSymbolValList.get(i).val()[0];
-                }
-                // 默认第二维长度均相等
-                return new VarSymbolVal(2, varSymbolValList.size(), val2D[0].length, val2D);
+            } else {
+                // 长度不匹配，error
             }
-            // 没有三维及以上
         }
-        // error
-        return null;
     }
 
     private void visit(Decl decl) {
@@ -177,12 +161,13 @@ public class Visitor {
 
     private void visit(ForStmt forStmt) {
         // ForStmt → LVal '=' Exp
-
+        visit(forStmt.lVal());
+        visit(forStmt.exp());
     }
 
     private void visit(FuncDef funcDef) {
         //FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
-        var returnType = visit(funcDef.funcType());
+        var returnValueType = visit(funcDef.funcType());
 
         var identToken = funcDef.ident().token();
         if (symbolManager.isFuncSymbolDefined(identToken.content())) {
@@ -192,7 +177,7 @@ public class Visitor {
         symbolManager.createSymbolTable();
 
         var varSymbolList = visit(funcDef.funcFParams());
-        symbolManager.addFuncSymbol(identToken.content(), new FuncSymbol(returnType, varSymbolList));
+        symbolManager.addFuncSymbol(identToken.content(), new FuncSymbol(returnValueType, varSymbolList));
         visit(funcDef.block());
 
         symbolManager.backward();
@@ -200,7 +185,7 @@ public class Visitor {
 
     private VarSymbol visit(FuncFParam funcFParam) {
         // FuncFParam → BType Ident ['[' ']' { '[' ConstExp ']' }]
-        visit(funcFParam.bType());
+        var valueTypeEnum = visit(funcFParam.bType());
         var identToken = funcFParam.ident().token();
         VarSymbol varSymbol = null;
 
@@ -211,14 +196,17 @@ public class Visitor {
 
         if (!funcFParam.isArray()) {
             // 不是数组
-            varSymbol = new VarSymbol(false, new VarSymbolVal(0, 0, 0, new int[][]{{}}));
+            varSymbol = new VarSymbol(new ValueType(valueTypeEnum, new ArrayList<>()), false, null);
         } else if (funcFParam.constExpList().isEmpty()) {
-            varSymbol = new VarSymbol(false, new VarSymbolVal(1, 0, 0, new int[][]{{}}));
-        } else if (funcFParam.constExpList().size() == 1) {
-            var result = visit(funcFParam.constExpList().get(0));
-            varSymbol = new VarSymbol(false, new VarSymbolVal(2, 0, result.value, new int[][]{{}}));
+            varSymbol = new VarSymbol(new ValueType(valueTypeEnum, new ArrayList<>(List.of(-1))), false, null);
+        } else {
+            var shape = new ArrayList<>(List.of(-1)); // -1 用来表示[]而不是[3]
+            for (var constExp : funcFParam.constExpList()) { // 其实二维不需要这个，这样写就可以支持多维
+                var result = visit(constExp);
+                shape.add(result.value);
+            }
+            varSymbol = new VarSymbol(new ValueType(valueTypeEnum, shape), false, null);
         }
-        // 更多维
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
         return varSymbol;
     }
@@ -232,25 +220,41 @@ public class Visitor {
         return varSymbolList;
     }
 
-    private void visit(FuncRParams funcRParams) {
+    private List<VisitResult> visit(FuncRParams funcRParams) {
+        //  FuncRParams → Exp { ',' Exp }
+        var visitResultList = new ArrayList<VisitResult>();
+        funcRParams.expList().forEach(exp -> {
+            visitResultList.add(visit(exp));
+        });
+        return visitResultList;
     }
 
-    private ReturnType visit(FuncType funcType) {
+    private ValueTypeEnum visit(FuncType funcType) {
         if (funcType.type() == LexType.INTTK) {
-            return ReturnType.INT;
-        } else if (funcType.type() == LexType.VOIDTK) {
-            return ReturnType.VOID;
+            return ValueTypeEnum.INT;
         }
-        return ReturnType.VOID;
+        return ValueTypeEnum.VOID;
     }
 
     private void visit(InitVal initVal) {
+//        InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'// 1.表达式初值 2.一维数组初值 3.二维数组初值
+        if (initVal.exp() != null) {
+            visit(initVal.exp());
+        } else {
+            initVal.initValList().forEach(this::visit);
+        }
     }
 
     private void visit(LAndExp lAndExp) {
+        //LAndExp → EqExp | LAndExp '&&' EqExp
+        //改写为 LAndExp -> EqExp { '&&' EqExp }
+        lAndExp.eqExpList().forEach(this::visit);
     }
 
     private void visit(LOrExp lOrExp) {
+        // LOrExp → LAndExp | LOrExp '||' LAndExp
+        //改写为 LOrExp -> LAndExp { '||' LAndExp }
+        lOrExp.lAndExpList().forEach(this::visit);
     }
 
     private VisitResult visit(LVal lVal) {
@@ -259,33 +263,23 @@ public class Visitor {
         var varSymbol = symbolManager.findVarSymbol(identToken.content());
         if (varSymbol == null) {
             OutputHelper.addError(ErrorType.IDENT_UNDEFINED, identToken.lineNum(), "'" + identToken.content() + "' undeclared");
-            return new VisitResult(ReturnType.VOID);
-        } else if (!varSymbol.isConst()) {
-            // 是变量
-            lVal.expList().forEach(this::visit);
-            return new VisitResult(ReturnType.INT);
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, null), false, 0);
         } else {
-            // 是常量
-            if (lVal.expList().isEmpty() && varSymbol.varSymbolVal().dimension() == 0) {
-                //0维
-                return new VisitResult(ReturnType.INT, true, varSymbol.varSymbolVal().val()[0][0]);
-            } else if (lVal.expList().size() == 1 && varSymbol.varSymbolVal().dimension() == 1) {
-                //1维
-                var expResult = visit(lVal.expList().get(0));
-                // TODO 越界检查
-                return new VisitResult(ReturnType.INT, true, varSymbol.varSymbolVal().val()[0][expResult.value]);
-            } else if (lVal.expList().size() == 2 && varSymbol.varSymbolVal().dimension() == 2) {
-                //2维
-                var expResult1 = visit(lVal.expList().get(0));
-                var expResult2 = visit(lVal.expList().get(1));
-                // TODO 越界检查
-                return new VisitResult(ReturnType.INT, true, varSymbol.varSymbolVal().val()[expResult1.value][expResult2.value]);
+            // 包含了常量和变量的两种情况
+            var newShape = new ArrayList<>(varSymbol.valueType().shape());
+            var indexList = new ArrayList<Integer>();
+            for (var exp : lVal.expList()) {
+                var result = visit(exp);
+                indexList.add(result.value);
+                newShape.remove(0);
             }
+            return new VisitResult(new ValueType(varSymbol.valueType().type(), newShape), varSymbol.isConst(), varSymbol.getValue(indexList));
         }
-        return null;
     }
 
     private void visit(MainFuncDef mainFuncDef) {
+        // MainFuncDef → 'int' 'main' '(' ')' Block
+        visit(mainFuncDef.block());
     }
 
     private VisitResult visit(MulExp mulExp) {
@@ -299,7 +293,7 @@ public class Visitor {
         }
         for (int i = 0; i < mulExp.opLexTypeList().size(); i++) {
             result = visit(mulExp.unaryExpList().get(1 + i));
-            if (result.isConst && isConst) {
+            if (isConst && result.isConst) {
                 switch (mulExp.opLexTypeList().get(i)) {
                     case MULT -> value *= result.value;
                     case DIV -> value /= result.value;
@@ -310,14 +304,11 @@ public class Visitor {
                 isConst = false;
             }
         }
-        if (isConst) {
-            return new VisitResult(ReturnType.INT, true, value);
-        }
-        return new VisitResult(ReturnType.INT, false);
+        return new VisitResult(new ValueType(ValueTypeEnum.INT, new ArrayList<>()), isConst, value);
     }
 
     private VisitResult visit(Number number) {
-        return new VisitResult(ReturnType.INT, true, number.intConst());
+        return new VisitResult(new ValueType(ValueTypeEnum.INT, new ArrayList<>()), true, number.intConst());
     }
 
     private VisitResult visit(PrimaryExp primaryExp) {
@@ -333,9 +324,74 @@ public class Visitor {
     }
 
     private void visit(RelExp relExp) {
+        //RelExp → AddExp | RelExp ('<' | '>' | '<=' | '>=') AddExp
+        //改写为 RelExp -> AddExp { ('<' | '>' | '<=' | '>=') AddExp }
+        relExp.addExpList().forEach(this::visit);
     }
 
     private void visit(Stmt stmt) {
+        //Stmt → LVal '=' Exp ';'
+        //| [Exp] ';'
+        //| Block
+        //| 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+        //| 'for' '(' [ForStmt] ';' [Cond] ';' [forStmt] ')' Stmt
+        //| 'break' ';' | 'continue' ';'
+        //| 'return' [Exp] ';'
+        //| LVal '=' 'getint''('')'';'
+        //| 'printf''('FormatString{','Exp}')'';'
+        if (stmt instanceof StmtBlock stmtBlock) {
+            symbolManager.createSymbolTable();
+            visit(stmtBlock.block);
+            symbolManager.backward();
+        } else if (stmt instanceof StmtBreak stmtBreak) {
+            if (loop > 0) {
+                loop--;
+            } else {
+                OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtBreak.token.lineNum(), "break statement not within a loop");
+            }
+        } else if (stmt instanceof StmtContinue stmtContinue) {
+            if (loop == 0) {
+                OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtContinue.token.lineNum(), "continue statement not within a loop");
+            }
+        } else if (stmt instanceof StmtFor stmtFor) {
+            // 'for' '(' [ForStmt] ';' [Cond] ';' [forStmt] ')' Stmt
+            visit(stmtFor.forStmt1);
+            visit(stmtFor.cond);
+            visit(stmtFor.forStmt3);
+            loop++;
+            visit(stmtFor.stmt);
+        } else if (stmt instanceof StmtIf stmtIf) {
+            // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+            visit(stmtIf.cond);
+            visit(stmtIf.stmt);
+            if (stmtIf.elseStmt != null) {
+                visit(stmtIf.elseStmt);
+            }
+        } else if (stmt instanceof StmtLValExp stmtLValExp) {
+            // LVal '=' Exp ';'               -> Ident { '[' Exp ']' } '=' Exp ';'
+            // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '('...
+            // | [Exp] ';'                    -> Ident { '[' Exp ']' } '+-*/%' || ';' || '(' Exp ')'... || Number || '+'|'-'|'!'
+            switch (stmtLValExp.type) {
+                case LVALEXP -> {
+                    visit(stmtLValExp.lVal);
+                    visit(stmtLValExp.exp);
+                }
+                case GETINT -> {
+                    visit(stmtLValExp.lVal);
+                }
+                case EXP -> {
+                    if (stmtLValExp.exp != null) {
+                        visit(stmtLValExp.exp);
+                    }
+                }
+            }
+        } else if (stmt instanceof StmtPrint stmtPrint) {
+            //'printf''('FormatString{','Exp}')'';'
+            stmtPrint.expList.forEach(this::visit);
+        } else if (stmt instanceof StmtReturn stmtReturn) {
+            //'return' [Exp] ';'
+            // TODO error return in void and missing return
+        }
     }
 
     private VisitResult visit(UnaryExp unaryExp) {
@@ -345,30 +401,46 @@ public class Visitor {
         } else if (unaryExp.unaryOp() != null && unaryExp.unaryExp() != null) {
             var op = visit(unaryExp.unaryOp());
             var result = visit(unaryExp.unaryExp());
-            if (result.isConst) {
-                switch (op) {
-                    case PLUS -> result.value = +result.value;
-                    case MINU -> result.value = -result.value;
-                    case NOT -> {
-                        if (result.value != 0) {
-                            result.value = 0;
-                        } else {
-                            result.value = 1;
-                        }
+            // 没有管是常量还是变量
+            switch (op) {
+                case PLUS -> result.value = +result.value;
+                case MINU -> result.value = -result.value;
+                case NOT -> {
+                    if (result.value != 0) {
+                        result.value = 0;
+                    } else {
+                        result.value = 1;
                     }
-                    default -> throw new IllegalStateException("Unexpected value: " + op);
                 }
-                return result;
-            } else {
-                return new VisitResult(ReturnType.INT, false);
+                default -> throw new IllegalStateException("Unexpected value: " + op);
             }
+            return result;
         } else if (unaryExp.ident() != null) {
             // Ident '(' [FuncRParams] ')'
-            if (unaryExp.funcRParams() != null) {
-                visit(unaryExp.funcRParams());
+            var identToken = unaryExp.ident().token();
+            if (!symbolManager.isFuncSymbolDefined(identToken.content())) {
+                OutputHelper.addError(ErrorType.IDENT_UNDEFINED, identToken.lineNum(), "function '" + identToken.content() + "' undefined");
             }
-            // TODO 如果Ident函数为void则报错
-            return new VisitResult(ReturnType.INT, false);
+            var funcSymbol = symbolManager.findFuncSymbol(identToken.content());
+            if (unaryExp.funcRParams() != null) {
+                var resultList = visit(unaryExp.funcRParams());
+                if (funcSymbol.paramVarSymbolList().size() != resultList.size()) {
+                    // 参数数量错误
+                    OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "wrong param number in function '" + identToken.content() + "'");
+                } else {
+                    // 参数数量正确
+                    for (int i = 0; i < resultList.size(); i++) {
+                        var funcFParamValueType = funcSymbol.paramVarSymbolList().get(i).valueType();
+                        var funcRParamValueType = resultList.get(i).valueType;
+                        if (!funcFParamValueType.equals(funcRParamValueType)) {
+                            // 参数类型错误
+                            OutputHelper.addError(ErrorType.FUNC_PARAM_TYPE_ERROR, identToken.lineNum(),
+                                    "expected '" + funcFParamValueType.type() + funcFParamValueType.shape() + "' but argument is of type '" + funcRParamValueType.type() + funcRParamValueType.shape() + "'");
+                        }
+                    }
+                }
+            }
+            return new VisitResult(new ValueType(funcSymbol.valueTypeEnum(), new ArrayList<>()), false, 0);
         }
         return null;
     }
@@ -378,33 +450,31 @@ public class Visitor {
     }
 
     private void visit(VarDecl varDecl) {
+        //  VarDecl → BType VarDef { ',' VarDef } ';'
+        var valueTypeEnum = visit(varDecl.bType());
+        for (var varDef : varDecl.varDefList()) {
+            visit(varDef, valueTypeEnum);
+        }
     }
 
-    private void visit(VarDef varDef) {
+    private void visit(VarDef varDef, ValueTypeEnum valueTypeEnum) {
         // VarDef → Ident { '[' ConstExp ']' } // 包含普通变量、一维数组、二维数组定义
         // | Ident { '[' ConstExp ']' } '=' InitVal
-        var lenList = new ArrayList<Integer>();
-
+        var shape = new ArrayList<Integer>();
         var identToken = varDef.ident().token();
         if (symbolManager.isVarSymbolDefined(identToken.content())) {
-            OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "redeclaration of '" + identToken.content() + "'");
+            OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "var redefinition of '" + identToken.content() + "'");
             return;
         }
 
         varDef.constExpList().forEach(constExp -> {
-            lenList.add(visit(constExp).value);
+            shape.add(visit(constExp).value);
         });
 
         if (varDef.initVal() != null) {
             visit(varDef.initVal());
         }
-
-        // '=' InitVal 未处理，非常量无需存储值
-        symbolManager.addVarSymbol(identToken.content(),
-                new VarSymbol(false,
-                        new VarSymbolVal(lenList.size(),
-                                lenList.size() > 0 ? lenList.get(0) : 0,
-                                lenList.size() > 1 ? lenList.get(1) : 0, new int[][]{{}})));
+        symbolManager.addVarSymbol(identToken.content(), new VarSymbol(new ValueType(valueTypeEnum, shape), false, null));
     }
 
 }

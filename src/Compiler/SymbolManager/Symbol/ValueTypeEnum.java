@@ -1,6 +1,6 @@
 package Compiler.SymbolManager.Symbol;
 
-public enum ReturnType {
+public enum ValueTypeEnum {
     INT,
     VOID,
 }

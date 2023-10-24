@@ -4,7 +4,6 @@
 */
 package Compiler.SymbolManager;
 
-import Compiler.SymbolManager.Symbol.FuncSymbol;
 import Compiler.SymbolManager.Symbol.VarSymbol;
 
 import java.util.Map;

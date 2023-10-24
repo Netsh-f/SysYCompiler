@@ -14,18 +14,19 @@ import java.util.List;
 public class Parser {
     private final List<Token> tokens;
     private int pos;
-    private final boolean debug = true;
+    private boolean outputSwitch = false;
 
     private StringBuilder output = new StringBuilder();
 
-    public Parser(List<Token> tokens) {
+    public Parser(List<Token> tokens, boolean outputSwitch) {
         this.tokens = tokens;
         this.pos = 0;
+        this.outputSwitch = outputSwitch;
     }
 
     public CompUnit run() {
         var ret = compUnit();
-        if (debug) {
+        if (outputSwitch) {
             OutputHelper.ParserOutput(output);
         }
         return ret;
@@ -601,25 +602,29 @@ public class Parser {
     }
 
     private StmtBreak stmtBreak() {
+        Token breakToken = null;
         if (getLexType() == LexType.BREAKTK) {
+            breakToken = getToken();
             next();
         }
         if (getLexType() == LexType.SEMICN) {
             next();
         }
         output.append("<Stmt>\n");
-        return new StmtBreak();
+        return new StmtBreak(breakToken);
     }
 
     private StmtContinue stmtContinue() {
+        Token continueToken = null;
         if (getLexType() == LexType.CONTINUETK) {
+            continueToken = getToken();
             next();
         }
         if (getLexType() == LexType.SEMICN) {
             next();
         }
         output.append("<Stmt>\n");
-        return new StmtContinue();
+        return new StmtContinue(continueToken);
     }
 
     private StmtReturn stmtReturn() {
@@ -744,7 +749,7 @@ public class Parser {
             //UnaryExp → UnaryOp UnaryExp
             unaryOp = unaryOp();
             unaryExp = unaryExp();
-        } else if (getLexType(1) == LexType.LPARENT) {
+        } else if (getLexType() == LexType.IDENFR && getLexType(1) == LexType.LPARENT) {
             //UnaryExp → Ident '(' [FuncRParams] ')'
             ident = ident();
             if (getLexType() == LexType.LPARENT) {
