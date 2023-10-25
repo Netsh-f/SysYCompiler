@@ -292,7 +292,9 @@ public class Visitor {
 
     private void visit(MainFuncDef mainFuncDef) {
         // MainFuncDef → 'int' 'main' '(' ')' Block
+        curFuncReturnType = ValueTypeEnum.INT;
         visit(mainFuncDef.block(), true);
+        curFuncReturnType = ValueTypeEnum.VOID;
     }
 
     private VisitResult visit(MulExp mulExp) {
@@ -357,9 +359,7 @@ public class Visitor {
             visit(stmtBlock.block, false);
             symbolManager.backward();
         } else if (stmt instanceof StmtBreak stmtBreak) {
-            if (loop > 0) {
-                loop--;
-            } else {
+            if (loop == 0) {
                 OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtBreak.token.lineNum(), "break statement not within a loop");
             }
         } else if (stmt instanceof StmtContinue stmtContinue) {
@@ -373,6 +373,7 @@ public class Visitor {
             visit(stmtFor.forStmt3);
             loop++;
             visit(stmtFor.stmt);
+            loop--;
         } else if (stmt instanceof StmtIf stmtIf) {
             // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
             visit(stmtIf.cond);

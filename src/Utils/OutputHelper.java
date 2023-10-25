@@ -27,12 +27,12 @@ public class OutputHelper {
     }
 
     public static void addParserOutput(String s) {
-        if(parserOutputSwitch){
+        if (parserOutputSwitch) {
             parserOutputStringBuilder.append(s).append("\n");
         }
     }
 
-    public static void ParserOutput(){
+    public static void ParserOutput() {
         FileHelper.writeToFile(outputFileName, parserOutputStringBuilder.toString());
     }
 
@@ -64,5 +64,14 @@ public class OutputHelper {
         if (errorOutputSwitch) {
             errorDataList.add(new ErrorData(type, lineNum, info));
         }
+    }
+
+    public static void ErrorOutput() {
+        errorDataList.sort(ErrorData.lineNumComparator);
+        StringBuilder output = new StringBuilder();
+        for (var errorData : errorDataList) {
+            output.append(errorData.lineNum()).append(" ").append(errorTypeCodeMap.get(errorData.type())).append("\n");
+        }
+        FileHelper.writeToFile(outputFileName, output.toString());
     }
 }
