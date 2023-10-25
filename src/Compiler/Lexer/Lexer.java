@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
-    private String source;
+    private final String source;
     private int pos;
     private int lineNum;
-    private StringBuilder token;
+    private final StringBuilder token;
 
     public Lexer(String source) {
         this.source = source;
@@ -100,13 +100,16 @@ public class Lexer {
         } else if (c == '"') {
             while (true) {
                 c = tokenAppendGetNextChar(c);
-                if (CharHelper.isNormalChar(c)) {
+                if (CharHelper.isNormalChar(c) && c != '\\') {
                     continue;
                 } else if (c == '%') {
                     c = tokenAppendGetNextChar(c);
                     if (c == 'd') {
                         continue;
                     } else {
+                        if (c == '"') {
+                            backwardPos();
+                        }
                         OutputHelper.addError(ErrorType.FORMAT_STRING_ERROR, lineNum, "'%" + c + "' is illegal in <FormatString>");
                     }
                 } else if (c == '\\') {
@@ -114,6 +117,9 @@ public class Lexer {
                     if (c == 'n') {
                         continue;
                     } else {
+                        if (c == '"') {
+                            backwardPos();
+                        }
                         OutputHelper.addError(ErrorType.FORMAT_STRING_ERROR, lineNum, "'\\" + c + "' is illegal in <FormatString>");
                     }
                 } else if (c == '"') {

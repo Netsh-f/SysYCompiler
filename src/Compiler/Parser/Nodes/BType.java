@@ -4,5 +4,7 @@
 */
 package Compiler.Parser.Nodes;
 
-public record BType() {
+import Compiler.SymbolManager.Symbol.ValueTypeEnum;
+
+public record BType(ValueTypeEnum valueTypeEnum) {
 }

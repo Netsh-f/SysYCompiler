@@ -15,6 +15,7 @@ import java.util.Map;
 
 public class OutputHelper {
     private static final String outputFileName = "output.txt";
+    private static final String errorOutputFileName = "error.txt";
 
     public static boolean parserOutputSwitch = true;
     private static final StringBuilder parserOutputStringBuilder = new StringBuilder();
@@ -72,6 +73,6 @@ public class OutputHelper {
         for (var errorData : errorDataList) {
             output.append(errorData.lineNum()).append(" ").append(errorTypeCodeMap.get(errorData.type())).append("\n");
         }
-        FileHelper.writeToFile(outputFileName, output.toString());
+        FileHelper.writeToFile(errorOutputFileName, output.toString());
     }
 }
