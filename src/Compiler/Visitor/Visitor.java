@@ -17,13 +17,13 @@ import Utils.Error.ErrorType;
 import Utils.OutputHelper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Visitor {
     private CompUnit unit;
     private SymbolManager symbolManager;
     private int loop = 0;
+    private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
 
     public Visitor(CompUnit compUnit) {
         this.unit = compUnit;
@@ -68,9 +68,16 @@ public class Visitor {
         // error
     }
 
-    private void visit(Block block) {
+    private void visit(Block block, boolean checkReturn) {
         // Block → '{' { BlockItem } '}'
-        block.blockItemList().forEach(this::visit);
+        for (int i = 0; i < block.blockItemList().size(); i++) {
+            visit(block.blockItemList().get(i));
+            if (checkReturn && i == block.blockItemList().size() - 1) {
+                if (!(block.blockItemList().get(i).stmt() instanceof StmtReturn)) {
+                    OutputHelper.addError(ErrorType.NO_RETURN, block.rBraceToken().lineNum(), "missing return stmt in non-void function");
+                }
+            }
+        }
     }
 
     private ValueTypeEnum visit(BType bType) {
@@ -161,7 +168,7 @@ public class Visitor {
 
     private void visit(ForStmt forStmt) {
         // ForStmt → LVal '=' Exp
-        visit(forStmt.lVal());
+        visit(forStmt.lVal(), true); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
     }
 
@@ -178,7 +185,10 @@ public class Visitor {
 
         var varSymbolList = visit(funcDef.funcFParams());
         symbolManager.addFuncSymbol(identToken.content(), new FuncSymbol(returnValueType, varSymbolList));
-        visit(funcDef.block());
+
+        curFuncReturnType = returnValueType; // 记录当前函数的返回类型，为检查return语句错误做准备
+        visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
+        curFuncReturnType = ValueTypeEnum.VOID;
 
         symbolManager.backward();
     }
@@ -257,7 +267,7 @@ public class Visitor {
         lOrExp.lAndExpList().forEach(this::visit);
     }
 
-    private VisitResult visit(LVal lVal) {
+    private VisitResult visit(LVal lVal, boolean checkConst) {
         //  LVal → Ident {'[' Exp ']'}
         var identToken = lVal.ident().token();
         var varSymbol = symbolManager.findVarSymbol(identToken.content());
@@ -266,6 +276,9 @@ public class Visitor {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, null), false, 0);
         } else {
             // 包含了常量和变量的两种情况
+            if (checkConst && varSymbol.isConst()) {
+                OutputHelper.addError(ErrorType.MODIFY_CONST, identToken.lineNum(), "assignment of read-only variable 'a', modify const");
+            }
             var newShape = new ArrayList<>(varSymbol.valueType().shape());
             var indexList = new ArrayList<Integer>();
             for (var exp : lVal.expList()) {
@@ -273,13 +286,13 @@ public class Visitor {
                 indexList.add(result.value);
                 newShape.remove(0);
             }
-            return new VisitResult(new ValueType(varSymbol.valueType().type(), newShape), varSymbol.isConst(), varSymbol.getValue(indexList));
+            return new VisitResult(new ValueType(varSymbol.valueType().type(), newShape), varSymbol.isConst(), varSymbol.getValue(indexList)); // 如果是变量的话getValue()会直接返回一个0
         }
     }
 
     private void visit(MainFuncDef mainFuncDef) {
         // MainFuncDef → 'int' 'main' '(' ')' Block
-        visit(mainFuncDef.block());
+        visit(mainFuncDef.block(), true);
     }
 
     private VisitResult visit(MulExp mulExp) {
@@ -316,7 +329,7 @@ public class Visitor {
         if (primaryExp.exp() != null) {
             return visit(primaryExp.exp());
         } else if (primaryExp.lVal() != null) {
-            return visit(primaryExp.lVal());
+            return visit(primaryExp.lVal(), false);
         } else if (primaryExp.number() != null) {
             return visit(primaryExp.number());
         }
@@ -341,7 +354,7 @@ public class Visitor {
         //| 'printf''('FormatString{','Exp}')'';'
         if (stmt instanceof StmtBlock stmtBlock) {
             symbolManager.createSymbolTable();
-            visit(stmtBlock.block);
+            visit(stmtBlock.block, false);
             symbolManager.backward();
         } else if (stmt instanceof StmtBreak stmtBreak) {
             if (loop > 0) {
@@ -373,11 +386,11 @@ public class Visitor {
             // | [Exp] ';'                    -> Ident { '[' Exp ']' } '+-*/%' || ';' || '(' Exp ')'... || Number || '+'|'-'|'!'
             switch (stmtLValExp.type) {
                 case LVALEXP -> {
-                    visit(stmtLValExp.lVal);
+                    visit(stmtLValExp.lVal, true);
                     visit(stmtLValExp.exp);
                 }
                 case GETINT -> {
-                    visit(stmtLValExp.lVal);
+                    visit(stmtLValExp.lVal, true);
                 }
                 case EXP -> {
                     if (stmtLValExp.exp != null) {
@@ -390,7 +403,12 @@ public class Visitor {
             stmtPrint.expList.forEach(this::visit);
         } else if (stmt instanceof StmtReturn stmtReturn) {
             //'return' [Exp] ';'
-            // TODO error return in void and missing return
+            if (stmtReturn.exp != null) {
+                if (curFuncReturnType == ValueTypeEnum.VOID) {
+                    OutputHelper.addError(ErrorType.VOID_RETURN, stmtReturn.returnToken.lineNum(), "'return' with a value, in function returning void");
+                }
+                visit(stmtReturn.exp);
+            }
         }
     }
 
@@ -426,13 +444,13 @@ public class Visitor {
                 var resultList = visit(unaryExp.funcRParams());
                 if (funcSymbol.paramVarSymbolList().size() != resultList.size()) {
                     // 参数数量错误
-                    OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "wrong param number in function '" + identToken.content() + "'");
+                    OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "too few or many arguments to function '" + identToken.content() + "'");
                 } else {
                     // 参数数量正确
                     for (int i = 0; i < resultList.size(); i++) {
                         var funcFParamValueType = funcSymbol.paramVarSymbolList().get(i).valueType();
                         var funcRParamValueType = resultList.get(i).valueType;
-                        if (!funcFParamValueType.equals(funcRParamValueType)) {
+                        if (!funcFParamValueType.equals(funcRParamValueType)) { // ValueType.equals()方法重写了，考虑了[][3]的情况
                             // 参数类型错误
                             OutputHelper.addError(ErrorType.FUNC_PARAM_TYPE_ERROR, identToken.lineNum(),
                                     "expected '" + funcFParamValueType.type() + funcFParamValueType.shape() + "' but argument is of type '" + funcRParamValueType.type() + funcRParamValueType.shape() + "'");

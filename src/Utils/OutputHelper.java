@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public class OutputHelper {
+    public static boolean outputSwitch = true;
     private static final String outputFileName = "output.txt";
     private static final Map<ErrorType, String> errorTypeCodeMap = initErrorTypeCodeMap();
     private static final List<ErrorData> errorDataList = new ArrayList<>();
@@ -50,6 +51,8 @@ public class OutputHelper {
     }
 
     public static void addError(ErrorType type, int lineNum, String info) {
-        errorDataList.add(new ErrorData(type, lineNum, info));
+        if(outputSwitch){
+            errorDataList.add(new ErrorData(type, lineNum, info));
+        }
     }
 }

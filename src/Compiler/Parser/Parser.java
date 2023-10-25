@@ -6,6 +6,7 @@ import Compiler.Parser.Nodes.Number;
 import Compiler.Parser.Nodes.StmtNode.*;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.StmtNode.StmtLValExpType;
+import Utils.Error.ErrorType;
 import Utils.OutputHelper;
 
 import java.util.ArrayList;
@@ -74,6 +75,13 @@ public class Parser {
         return null;
     }
 
+    private Token getToken(int i) {
+        if (pos + i >= 0 && pos + i < tokens.size()) {
+            return tokens.get(i);
+        }
+        return null;
+    }
+
     private AddExp addExp() {
         // AddExp → MulExp | AddExp ('+' | '−') MulExp
         // 改写为 AddExp -> MulExp { ('+' | '−') MulExp } 遍历时要改成原来的语法书形状
@@ -104,6 +112,7 @@ public class Parser {
 
     private Block block() {
         // Block → '{' { BlockItem } '}'
+        Token rBraceToken = null;
         List<BlockItem> blockItemList = new ArrayList<>();
         if (getLexType() == LexType.LBRACE) {
             next();
@@ -112,10 +121,11 @@ public class Parser {
             blockItemList.add(blockItem());
         }
         if (getLexType() == LexType.RBRACE) {
+            rBraceToken = getToken();
             next();
         }
         output.append("<Block>\n");
-        return new Block(blockItemList);
+        return new Block(blockItemList, rBraceToken);
     }
 
     private BType bType() {
@@ -165,6 +175,8 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<ConstDecl>\n");
         return new ConstDecl(bType, constDefList);
@@ -609,6 +621,8 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<Stmt>\n");
         return new StmtBreak(breakToken);
@@ -622,6 +636,8 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<Stmt>\n");
         return new StmtContinue(continueToken);
@@ -629,8 +645,10 @@ public class Parser {
 
     private StmtReturn stmtReturn() {
         //'return' [Exp] ';'
+        Token returnToken = null;
         Exp exp = null;
         if (getLexType() == LexType.RETURNTK) {
+            returnToken = getToken();
             next();
         }
         if (getLexType() != LexType.SEMICN) {
@@ -638,9 +656,11 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<Stmt>\n");
-        return new StmtReturn(exp);
+        return new StmtReturn(returnToken, exp);
     }
 
     private StmtPrint stmtPrint() {
@@ -666,6 +686,8 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<Stmt>\n");
         return new StmtPrint(formatString, expList);
@@ -673,7 +695,7 @@ public class Parser {
 
     private StmtLValExp stmtLValExp() {
         // LVal '=' Exp ';'               -> Ident { '[' Exp ']' } '=' Exp ';'
-        // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '('...
+        // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '(' ')' ';'
         // | [Exp] ';'                    -> Ident { '[' Exp ']' } '+-*/%' || ';' || '(' Exp ')'... || Number || '+'|'-'|'!'
         StmtLValExpType type = StmtLValExpType.LVALEXP;
         Exp exp = null;
@@ -791,6 +813,8 @@ public class Parser {
         }
         if (getLexType() == LexType.SEMICN) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
         output.append("<VarDecl>\n");
         return new VarDecl(bType, varDefList);

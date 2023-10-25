@@ -4,7 +4,9 @@
 */
 package Compiler.Parser.Nodes;
 
+import Compiler.Lexer.Token;
+
 import java.util.List;
 
-public record Block(List<BlockItem> blockItemList) {
+public record Block(List<BlockItem> blockItemList, Token rBraceToken) {
 }

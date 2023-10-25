@@ -17,6 +17,6 @@ public record VarSymbol(ValueType valueType, boolean isConst, List<Integer> valu
             }
             return values.get(valuesIndex);
         }
-        return 0;
+        return 0; // 如果是个变量直接返回一个0
     }
 }
