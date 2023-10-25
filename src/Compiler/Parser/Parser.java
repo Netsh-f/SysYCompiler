@@ -15,30 +15,18 @@ import java.util.List;
 public class Parser {
     private final List<Token> tokens;
     private int pos;
-    private boolean outputSwitch = false;
 
-    private StringBuilder output = new StringBuilder();
-
-    public Parser(List<Token> tokens, boolean outputSwitch) {
+    public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.pos = 0;
-        this.outputSwitch = outputSwitch;
     }
 
     public CompUnit run() {
-        var ret = compUnit();
-        if (outputSwitch) {
-            OutputHelper.ParserOutput(output);
-        }
-        return ret;
-    }
-
-    private void outputAppend(String s) {
-        output.append(s + "\n");
+        return compUnit();
     }
 
     private void next() {
-        outputAppend(tokens.get(pos).toString());
+        OutputHelper.addParserOutput(tokens.get(pos).toString());
         if (pos < tokens.size() - 1) {
             pos++;
         }
@@ -90,11 +78,11 @@ public class Parser {
         mulExpList.add(mulExp());
         while (getLexType() == LexType.PLUS || getLexType() == LexType.MINU) {
             opLexTypeList.add(getLexType());
-            outputAppend("<AddExp>");
+            OutputHelper.addParserOutput("<AddExp>");
             next();
             mulExpList.add(mulExp());
         }
-        outputAppend("<AddExp>");
+        OutputHelper.addParserOutput("<AddExp>");
         return new AddExp(mulExpList, opLexTypeList);
     }
 
@@ -124,7 +112,7 @@ public class Parser {
             rBraceToken = getToken();
             next();
         }
-        output.append("<Block>\n");
+        OutputHelper.addParserOutput("<Block>");
         return new Block(blockItemList, rBraceToken);
     }
 
@@ -150,13 +138,13 @@ public class Parser {
         if (getLexType(1) == LexType.MAINTK) {
             mainFuncDef = mainFuncDef();
         }
-        output.append("<CompUnit>\n");
+        OutputHelper.addParserOutput("<CompUnit>");
         return new CompUnit(declList, funcDefList, mainFuncDef);
     }
 
     private Cond cond() {
         var lOrExp = lOrExp();
-        output.append("<Cond>\n");
+        OutputHelper.addParserOutput("<Cond>");
         return new Cond(lOrExp);
     }
 
@@ -178,7 +166,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<ConstDecl>\n");
+        OutputHelper.addParserOutput("<ConstDecl>");
         return new ConstDecl(bType, constDefList);
     }
 
@@ -198,13 +186,13 @@ public class Parser {
             next();
         }
         constInitVal = constInitVal();
-        output.append("<ConstDef>\n");
+        OutputHelper.addParserOutput("<ConstDef>");
         return new ConstDef(ident, constExpList, constInitVal);
     }
 
     private ConstExp constExp() {
         var addExp = addExp();
-        output.append("<ConstExp>\n");
+        OutputHelper.addParserOutput("<ConstExp>");
         return new ConstExp(addExp);
     }
 
@@ -227,7 +215,7 @@ public class Parser {
                 next();
             }
         }
-        output.append("<ConstInitVal>\n");
+        OutputHelper.addParserOutput("<ConstInitVal>");
         return new ConstInitVal(constExp, constInitValList);
     }
 
@@ -250,17 +238,17 @@ public class Parser {
         relExpList.add(relExp());
         while (getLexType() == LexType.EQL || getLexType() == LexType.NEQ) {
             opLexTypeList.add(getLexType());
-            outputAppend("<EqExp>");
+            OutputHelper.addParserOutput("<EqExp>");
             next();
             relExpList.add(relExp());
         }
-        outputAppend("<EqExp>");
+        OutputHelper.addParserOutput("<EqExp>");
         return new EqExp(relExpList, opLexTypeList);
     }
 
     private Exp exp() {
         var addExp = addExp();
-        output.append("<Exp>\n");
+        OutputHelper.addParserOutput("<Exp>");
         return new Exp(addExp);
     }
 
@@ -270,7 +258,7 @@ public class Parser {
             next();
         }
         Exp exp = exp();
-        output.append("<ForStmt>\n");
+        OutputHelper.addParserOutput("<ForStmt>");
         return new ForStmt(lVal, exp);
     }
 
@@ -289,7 +277,7 @@ public class Parser {
             next();
         }
         Block block = block();
-        output.append("<FuncDef>\n");
+        OutputHelper.addParserOutput("<FuncDef>");
         return new FuncDef(funcType, ident, funcFParams, block);
     }
 
@@ -317,7 +305,7 @@ public class Parser {
                 next();
             }
         }
-        output.append("<FuncFParam>\n");
+        OutputHelper.addParserOutput("<FuncFParam>");
         return new FuncFParam(bType, ident, isArray, constExpList);
     }
 
@@ -329,7 +317,7 @@ public class Parser {
             next();
             funcFParamList.add(funcFParam());
         }
-        output.append("<FuncFParams>\n");
+        OutputHelper.addParserOutput("<FuncFParams>");
         return new FuncFParams(funcFParamList);
     }
 
@@ -341,7 +329,7 @@ public class Parser {
             next();
             expList.add(exp());
         }
-        output.append("<FuncRParams>\n");
+        OutputHelper.addParserOutput("<FuncRParams>");
         return new FuncRParams(expList);
     }
 
@@ -352,7 +340,7 @@ public class Parser {
             lexType = getLexType();
             next();
         }
-        output.append("<FuncType>\n");
+        OutputHelper.addParserOutput("<FuncType>");
         return new FuncType(lexType);
     }
 
@@ -385,7 +373,7 @@ public class Parser {
                 next();
             }
         }
-        output.append("<InitVal>\n");
+        OutputHelper.addParserOutput("<InitVal>");
         return new InitVal(exp, initValList);
     }
 
@@ -395,11 +383,11 @@ public class Parser {
         List<EqExp> eqExpList = new ArrayList<>();
         eqExpList.add(eqExp());
         while (getLexType() == LexType.AND) {
-            outputAppend("<LAndExp>");
+            OutputHelper.addParserOutput("<LAndExp>");
             next();
             eqExpList.add(eqExp());
         }
-        outputAppend("<LAndExp>");
+        OutputHelper.addParserOutput("<LAndExp>");
         return new LAndExp(eqExpList);
     }
 
@@ -409,11 +397,11 @@ public class Parser {
         List<LAndExp> lAndExpList = new ArrayList<>();
         lAndExpList.add(lAndExp());
         while (getLexType() == LexType.OR) {
-            outputAppend("<LOrExp>");
+            OutputHelper.addParserOutput("<LOrExp>");
             next();
             lAndExpList.add(lAndExp());
         }
-        outputAppend("<LOrExp>");
+        OutputHelper.addParserOutput("<LOrExp>");
         return new LOrExp(lAndExpList);
     }
 
@@ -428,7 +416,7 @@ public class Parser {
                 next();
             }
         }
-        output.append("<LVal>\n");
+        OutputHelper.addParserOutput("<LVal>");
         return new LVal(ident, expList);
     }
 
@@ -446,7 +434,7 @@ public class Parser {
             next();
         }
         var block = block();
-        output.append("<MainFuncDef>\n");
+        OutputHelper.addParserOutput("<MainFuncDef>");
         return new MainFuncDef(block);
     }
 
@@ -458,11 +446,11 @@ public class Parser {
         unaryExpList.add(unaryExp());
         while (getLexType() == LexType.MULT || getLexType() == LexType.DIV || getLexType() == LexType.MOD) {
             opLexTypeList.add(getLexType());
-            outputAppend("<MulExp>");
+            OutputHelper.addParserOutput("<MulExp>");
             next();
             unaryExpList.add(unaryExp());
         }
-        outputAppend("<MulExp>");
+        OutputHelper.addParserOutput("<MulExp>");
         return new MulExp(unaryExpList, opLexTypeList);
     }
 
@@ -478,7 +466,7 @@ public class Parser {
                 next();
             }
         }
-        output.append("<Number>\n");
+        OutputHelper.addParserOutput("<Number>");
         return new Number(num);
     }
 
@@ -498,7 +486,7 @@ public class Parser {
         } else {
             lVal = lVal();
         }
-        output.append("<PrimaryExp>\n");
+        OutputHelper.addParserOutput("<PrimaryExp>");
         return new PrimaryExp(exp, lVal, number);
     }
 
@@ -510,11 +498,11 @@ public class Parser {
         addExpList.add(addExp());
         while (getLexType() == LexType.LSS || getLexType() == LexType.LEQ || getLexType() == LexType.GRE || getLexType() == LexType.GEQ) {
             opLexTypeList.add(getLexType());
-            outputAppend("<RelExp>");
+            OutputHelper.addParserOutput("<RelExp>");
             next();
             addExpList.add(addExp());
         }
-        outputAppend("<RelExp>");
+        OutputHelper.addParserOutput("<RelExp>");
         return new RelExp(addExpList, opLexTypeList);
     }
 
@@ -549,7 +537,7 @@ public class Parser {
 
     private StmtBlock stmtBlock() {
         var block = block();
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtBlock(block);
     }
 
@@ -572,7 +560,7 @@ public class Parser {
             next();
             elseStmt = stmt();
         }
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtIf(cond, stmt, elseStmt);
     }
 
@@ -609,7 +597,7 @@ public class Parser {
             next();
         }
         Stmt stmt = stmt();
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtFor(forStmt1, cond, forStmt3, stmt);
     }
 
@@ -624,7 +612,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtBreak(breakToken);
     }
 
@@ -639,7 +627,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtContinue(continueToken);
     }
 
@@ -659,7 +647,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtReturn(returnToken, exp);
     }
 
@@ -689,7 +677,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<Stmt>\n");
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtPrint(formatString, expList);
     }
 
@@ -697,66 +685,75 @@ public class Parser {
         // LVal '=' Exp ';'               -> Ident { '[' Exp ']' } '=' Exp ';'
         // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '(' ')' ';'
         // | [Exp] ';'                    -> Ident { '[' Exp ']' } '+-*/%' || ';' || '(' Exp ')'... || Number || '+'|'-'|'!'
-        StmtLValExpType type = StmtLValExpType.LVALEXP;
+        StmtLValExpType type;
         Exp exp = null;
         LVal lVal = null;
-        if (getLexType() == LexType.IDENFR) {
-            //三种可能
-            boolean isExp = true;
-            // 在下一个分号之前找'='，如果有，则为前两种情况
-            for (int i = 1; getLexType(i) != LexType.SEMICN && getLexType(i) != LexType.LEXER_END; i++) {
-                if (getLexType(i) == LexType.ASSIGN) {
-                    isExp = false;
-                    break;
-                }
+
+        int curPos = pos;
+        OutputHelper.parserOutputSwitch = false;
+        OutputHelper.errorOutputSwitch = false;
+        ident();
+        while (getLexType() == LexType.LBRACK) {
+            next();
+            exp();
+            if (getLexType() == LexType.RBRACK) {
+                next();
             }
-            if (isExp) {
-                // 是 [Exp] ';' 且 Exp 存在
-                type = StmtLValExpType.EXP;
+        }
+        if (getLexType() == LexType.ASSIGN) {
+            if (getLexType(1) == LexType.GETINTTK) {
+                type = StmtLValExpType.GETINT;
+            } else {
+                type = StmtLValExpType.LVALEXP;
+            }
+        } else {
+            type = StmtLValExpType.EXP;
+        }
+        pos = curPos;
+        OutputHelper.parserOutputSwitch = true;
+        OutputHelper.errorOutputSwitch = true;
+        // 上面是预读取，其实进行了回溯
+
+        switch (type) {
+            case LVALEXP -> {
+                lVal = lVal();
+                if (getLexType() == LexType.ASSIGN) {
+                    next();
+                }
                 exp = exp();
                 if (getLexType() == LexType.SEMICN) {
                     next();
                 }
-            } else {
-                // LVal '=' Exp ';' 或者 LVal '=' 'getint''('')'';'
+            }
+            case GETINT -> {
                 lVal = lVal();
                 if (getLexType() == LexType.ASSIGN) {
                     next();
                 }
                 if (getLexType() == LexType.GETINTTK) {
-                    // 是 LVal '=' 'getint''('')'';'
-                    type = StmtLValExpType.GETINT;
                     next();
-                    if (getLexType() == LexType.LPARENT) {
-                        next();
-                    }
-                    if (getLexType() == LexType.RPARENT) {
-                        next();
-                    }
-                    if (getLexType() == LexType.SEMICN) {
-                        next();
-                    }
-                } else {
-                    // 是 LVal '=' Exp ';'
-                    type = StmtLValExpType.LVALEXP;
-                    exp = exp();
-                    if (getLexType() == LexType.SEMICN) {
-                        next();
-                    }
+                }
+                if (getLexType() == LexType.LPARENT) {
+                    next();
+                }
+                if (getLexType() == LexType.RPARENT) {
+                    next();
+                }
+                if (getLexType() == LexType.SEMICN) {
+                    next();
                 }
             }
-        } else {
-            //只可能是 [Exp] ';'
-            type = StmtLValExpType.EXP;
-            if (getLexType() != LexType.SEMICN) {
-                //[Exp]存在
-                exp = exp();
-            }
-            if (getLexType() == LexType.SEMICN) {
-                next();
+            case EXP -> {
+                if (getLexType() != LexType.SEMICN) {
+                    exp = exp();
+                }
+                if (getLexType() == LexType.SEMICN) {
+                    next();
+                }
             }
         }
-        output.append("<Stmt>\n");
+
+        OutputHelper.addParserOutput("<Stmt>");
         return new StmtLValExp(type, lVal, exp);
     }
 
@@ -788,7 +785,7 @@ public class Parser {
             //UnaryExp → PrimaryExp
             primaryExp = primaryExp();
         }
-        output.append("<UnaryExp>\n");
+        OutputHelper.addParserOutput("<UnaryExp>");
         return new UnaryExp(primaryExp, ident, funcRParams, unaryOp, unaryExp);
     }
 
@@ -798,7 +795,7 @@ public class Parser {
             type = getLexType();
             next();
         }
-        output.append("<UnaryOp>\n");
+        OutputHelper.addParserOutput("<UnaryOp>");
         return new UnaryOp(type);
     }
 
@@ -816,7 +813,7 @@ public class Parser {
         } else {
             OutputHelper.addError(ErrorType.MISSING_SEMICN, getToken(-1).lineNum(), "expected ';'");
         }
-        output.append("<VarDecl>\n");
+        OutputHelper.addParserOutput("<VarDecl>");
         return new VarDecl(bType, varDefList);
     }
 
@@ -836,7 +833,7 @@ public class Parser {
             next();
             initVal = initVal();
         }
-        output.append("<VarDef>\n");
+        OutputHelper.addParserOutput("<VarDef>");
         return new VarDef(ident, constExpList, initVal);
     }
 }

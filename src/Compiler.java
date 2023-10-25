@@ -9,7 +9,8 @@ public class Compiler {
         String source = FileHelper.fileToString("testfile.txt");
 
         var tokens = new Lexer(source).run();
-        OutputHelper.LexerOutput(tokens);
-        var compUnit = new Parser(tokens, false).run();
+//        OutputHelper.LexerOutput(tokens);
+        var compUnit = new Parser(tokens).run();
+        OutputHelper.ParserOutput();
     }
 }

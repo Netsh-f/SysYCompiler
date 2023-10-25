@@ -14,12 +14,26 @@ import java.util.List;
 import java.util.Map;
 
 public class OutputHelper {
-    public static boolean outputSwitch = true;
     private static final String outputFileName = "output.txt";
+
+    public static boolean parserOutputSwitch = true;
+    private static final StringBuilder parserOutputStringBuilder = new StringBuilder();
+
+    public static boolean errorOutputSwitch = true;
     private static final Map<ErrorType, String> errorTypeCodeMap = initErrorTypeCodeMap();
     private static final List<ErrorData> errorDataList = new ArrayList<>();
 
     private OutputHelper() {
+    }
+
+    public static void addParserOutput(String s) {
+        if(parserOutputSwitch){
+            parserOutputStringBuilder.append(s).append("\n");
+        }
+    }
+
+    public static void ParserOutput(){
+        FileHelper.writeToFile(outputFileName, parserOutputStringBuilder.toString());
     }
 
     private static Map<ErrorType, String> initErrorTypeCodeMap() {
@@ -46,12 +60,8 @@ public class OutputHelper {
         FileHelper.writeToFile(outputFileName, output.toString());
     }
 
-    public static void ParserOutput(StringBuilder stringBuilder) {
-        FileHelper.writeToFile(outputFileName, stringBuilder.toString());
-    }
-
     public static void addError(ErrorType type, int lineNum, String info) {
-        if(outputSwitch){
+        if (errorOutputSwitch) {
             errorDataList.add(new ErrorData(type, lineNum, info));
         }
     }
