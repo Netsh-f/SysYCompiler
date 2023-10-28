@@ -37,21 +37,20 @@ public class Visitor {
     private VisitResult visit(AddExp addExp) {
         // AddExp → MulExp | AddExp ('+' | '−') MulExp
         // 改写为 AddExp -> MulExp { ('+' | '−') MulExp }
+
+        if (addExp == null || addExp.mulExpList().isEmpty()) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
+
         boolean isConst = true;
         int value = 0;
         var result = visit(addExp.mulExpList().get(0));
-        if (result == null) {
-            return null;
-        }
         var valueType = result.valueType;
         if (result.isConst) {
             value = result.value;
         }
         for (int i = 0; i < addExp.opLexTypeList().size(); i++) {
             result = visit(addExp.mulExpList().get(1 + i));
-            if (result == null) {
-                continue;
-            }
             if (isConst && result.isConst) {
                 switch (addExp.opLexTypeList().get(i)) {
                     case PLUS -> value += result.value;
@@ -67,6 +66,9 @@ public class Visitor {
 
     private void visit(BlockItem blockItem) {
         //  BlockItem → Decl | Stmt
+        if (blockItem == null) {
+            return;
+        }
         if (blockItem.decl() != null) {
             visit(blockItem.decl());
         } else if (blockItem.stmt() != null) {
@@ -77,6 +79,10 @@ public class Visitor {
 
     private void visit(Block block, boolean checkReturn) {
         // Block → '{' { BlockItem } '}'
+        if (block == null) {
+            return;
+        }
+
         BlockItem lastBlockItem = null;
         for (int i = 0; i < block.blockItemList().size(); i++) {
             visit(block.blockItemList().get(i));
@@ -90,12 +96,18 @@ public class Visitor {
     }
 
     private ValueTypeEnum visit(BType bType) {
+        if (bType == null) {
+            return ValueTypeEnum.VOID;
+        }
         return bType.valueTypeEnum();
     }
 
 
     private void visit(CompUnit compUnit) {
         //CompUnit → {Decl} {FuncDef} MainFuncDef
+        if (compUnit == null) {
+            return;
+        }
         compUnit.declList().forEach(this::visit);
         compUnit.funcDefList().forEach(this::visit);
         visit(compUnit.mainFuncDef());
@@ -103,11 +115,17 @@ public class Visitor {
 
     private void visit(Cond cond) {
         // Cond → LOrExp
+        if (cond == null) {
+            return;
+        }
         visit(cond.lOrExp());
     }
 
     private void visit(ConstDecl constDecl) {
         // ConstDecl → 'const' BType ConstDef { ',' ConstDef } ';'
+        if (constDecl == null) {
+            return;
+        }
         var valueTypeEnum = visit(constDecl.bType());
         for (var constDef : constDecl.constDefList()) {
             visit(constDef, valueTypeEnum);
@@ -116,6 +134,10 @@ public class Visitor {
 
     private void visit(ConstDef constDef, ValueTypeEnum valueTypeEnum) {
         // ConstDef → Ident { '[' ConstExp ']' } '=' ConstInitVal
+        if (constDef == null) {
+            return;
+        }
+
         var shape = new ArrayList<Integer>();
         var values = new ArrayList<Integer>();
 
@@ -133,11 +155,17 @@ public class Visitor {
     }
 
     private VisitResult visit(ConstExp constExp) {
+        if (constExp == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         return visit(constExp.addExp());
     }
 
     private void visit(ConstInitVal constInitVal, List<Integer> shape, List<Integer> values) {
         //  ConstInitVal → ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
+        if (constInitVal == null) {
+            return;
+        }
         if (constInitVal.constExp() != null) {
             var result = visit(constInitVal.constExp());
             values.add(result.value);
@@ -155,6 +183,9 @@ public class Visitor {
 
     private void visit(Decl decl) {
         // Decl → ConstDecl | VarDecl
+        if (decl == null) {
+            return;
+        }
         if (decl.constDecl() != null) {
             visit(decl.constDecl());
         } else if (decl.varDecl() != null) {
@@ -164,22 +195,34 @@ public class Visitor {
 
     private void visit(EqExp eqExp) {
         // EqExp → RelExp | { ('==' | '!=') RelExp }
+        if (eqExp == null) {
+            return;
+        }
         eqExp.relExpList().forEach(this::visit);
     }
 
     private VisitResult visit(Exp exp) {
         //  Exp → AddExp
+        if (exp == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         return visit(exp.addExp());
     }
 
     private void visit(ForStmt forStmt) {
         // ForStmt → LVal '=' Exp
+        if (forStmt == null) {
+            return;
+        }
         visit(forStmt.lVal(), true); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
     }
 
     private void visit(FuncDef funcDef) {
         //FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
+        if (funcDef == null) {
+            return;
+        }
         var returnValueType = visit(funcDef.funcType());
 
         var identToken = funcDef.ident().token();
@@ -203,15 +246,18 @@ public class Visitor {
         symbolManager.backward();
     }
 
-    private VarSymbol visit(FuncFParam funcFParam) {
+    private void visit(FuncFParam funcFParam, List<VarSymbol> varSymbolList) {
         // FuncFParam → BType Ident ['[' ']' { '[' ConstExp ']' }]
+        if (funcFParam == null) {
+            return;
+        }
         var valueTypeEnum = visit(funcFParam.bType());
         var identToken = funcFParam.ident().token();
         VarSymbol varSymbol;
 
         if (symbolManager.isVarSymbolDefined(identToken.content())) {
             OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "redefinition of parameter '" + identToken.content() + "'");
-            return null;
+            return;
         }
 
         if (!funcFParam.isArray()) {
@@ -228,22 +274,28 @@ public class Visitor {
             varSymbol = new VarSymbol(new ValueType(valueTypeEnum, shape), false, null);
         }
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
-        return varSymbol;
+        varSymbolList.add(varSymbol);
     }
 
     private void visit(FuncFParams funcFParams, List<VarSymbol> varSymbolList) {
         // FuncFParams → FuncFParam { ',' FuncFParam }
-        funcFParams.funcFParamList().forEach(funcFParam -> varSymbolList.add(visit(funcFParam)));
+        funcFParams.funcFParamList().forEach(funcFParam -> visit(funcFParam, varSymbolList));
     }
 
     private List<VisitResult> visit(FuncRParams funcRParams) {
         //  FuncRParams → Exp { ',' Exp }
         var visitResultList = new ArrayList<VisitResult>();
+        if (funcRParams == null) {
+            return visitResultList;
+        }
         funcRParams.expList().forEach(exp -> visitResultList.add(visit(exp)));
         return visitResultList;
     }
 
     private ValueTypeEnum visit(FuncType funcType) {
+        if (funcType == null) {
+            return ValueTypeEnum.VOID;
+        }
         if (funcType.type() == LexType.INTTK) {
             return ValueTypeEnum.INT;
         }
@@ -252,6 +304,9 @@ public class Visitor {
 
     private void visit(InitVal initVal) {
 //        InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'// 1.表达式初值 2.一维数组初值 3.二维数组初值
+        if (initVal == null) {
+            return;
+        }
         if (initVal.exp() != null) {
             visit(initVal.exp());
         } else {
@@ -262,17 +317,26 @@ public class Visitor {
     private void visit(LAndExp lAndExp) {
         //LAndExp → EqExp | LAndExp '&&' EqExp
         //改写为 LAndExp -> EqExp { '&&' EqExp }
+        if (lAndExp == null) {
+            return;
+        }
         lAndExp.eqExpList().forEach(this::visit);
     }
 
     private void visit(LOrExp lOrExp) {
         // LOrExp → LAndExp | LOrExp '||' LAndExp
         //改写为 LOrExp -> LAndExp { '||' LAndExp }
+        if (lOrExp == null) {
+            return;
+        }
         lOrExp.lAndExpList().forEach(this::visit);
     }
 
     private VisitResult visit(LVal lVal, boolean checkConst) {
         //  LVal → Ident {'[' Exp ']'}
+        if (lVal == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         var identToken = lVal.ident().token();
         var varSymbol = symbolManager.findVarSymbol(identToken.content());
         if (varSymbol == null) {
@@ -296,6 +360,9 @@ public class Visitor {
 
     private void visit(MainFuncDef mainFuncDef) {
         // MainFuncDef → 'int' 'main' '(' ')' Block
+        if (mainFuncDef == null) {
+            return;
+        }
         curFuncReturnType = ValueTypeEnum.INT;
         visit(mainFuncDef.block(), true);
         curFuncReturnType = ValueTypeEnum.VOID;
@@ -304,12 +371,12 @@ public class Visitor {
     private VisitResult visit(MulExp mulExp) {
         //MulExp → UnaryExp | MulExp ('*' | '/' | '%') UnaryExp
         //改写为 MulExp -> UnaryExp { ('*' | '/' | '%') UnaryExp }
+        if (mulExp == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         boolean isConst = true;
         int value = 0;
         var result = visit(mulExp.unaryExpList().get(0));
-        if (result == null) {
-            return null;
-        }
         var valueType = result.valueType;
         if (result.isConst) {
             value = result.value;
@@ -334,11 +401,17 @@ public class Visitor {
     }
 
     private VisitResult visit(Number number) {
+        if (number == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         return new VisitResult(new ValueType(ValueTypeEnum.INT, new ArrayList<>()), true, number.intConst());
     }
 
     private VisitResult visit(PrimaryExp primaryExp) {
         // PrimaryExp → '(' Exp ')' | LVal | Number
+        if (primaryExp == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         if (primaryExp.exp() != null) {
             return visit(primaryExp.exp());
         } else if (primaryExp.lVal() != null) {
@@ -352,6 +425,9 @@ public class Visitor {
     private void visit(RelExp relExp) {
         //RelExp → AddExp | RelExp ('<' | '>' | '<=' | '>=') AddExp
         //改写为 RelExp -> AddExp { ('<' | '>' | '<=' | '>=') AddExp }
+        if (relExp == null) {
+            return;
+        }
         relExp.addExpList().forEach(this::visit);
     }
 
@@ -365,6 +441,9 @@ public class Visitor {
         //| 'return' [Exp] ';'
         //| LVal '=' 'getint''('')'';'
         //| 'printf''('FormatString{','Exp}')'';'
+        if (stmt == null) {
+            return;
+        }
         if (stmt instanceof StmtBlock stmtBlock) {
             symbolManager.createSymbolTable();
             visit(stmtBlock.block, false);
@@ -424,14 +503,14 @@ public class Visitor {
 
     private VisitResult visit(UnaryExp unaryExp) {
         // UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')' | UnaryOp UnaryExp //  UnaryOp → '+' | '−' | '!'
+        if (unaryExp == null) {
+            return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
+        }
         if (unaryExp.primaryExp() != null) {
             return visit(unaryExp.primaryExp());
         } else if (unaryExp.unaryOp() != null && unaryExp.unaryExp() != null) {
             var op = visit(unaryExp.unaryOp());
             var result = visit(unaryExp.unaryExp());
-            if (result == null) {
-                return null;
-            }
             // 没有管是常量还是变量
             switch (op) {
                 case PLUS -> {
@@ -476,15 +555,21 @@ public class Visitor {
             }
             return new VisitResult(new ValueType(funcSymbol.valueTypeEnum(), new ArrayList<>()), false, 0);
         }
-        return null;
+        return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
     }
 
     private LexType visit(UnaryOp unaryOp) {
+        if (unaryOp == null) {
+            return LexType.PLUS;
+        }
         return unaryOp.opType();
     }
 
     private void visit(VarDecl varDecl) {
         //  VarDecl → BType VarDef { ',' VarDef } ';'
+        if (varDecl == null) {
+            return;
+        }
         var valueTypeEnum = visit(varDecl.bType());
         for (var varDef : varDecl.varDefList()) {
             visit(varDef, valueTypeEnum);
@@ -494,6 +579,9 @@ public class Visitor {
     private void visit(VarDef varDef, ValueTypeEnum valueTypeEnum) {
         // VarDef → Ident { '[' ConstExp ']' } // 包含普通变量、一维数组、二维数组定义
         // | Ident { '[' ConstExp ']' } '=' InitVal
+        if (varDef == null) {
+            return;
+        }
         var shape = new ArrayList<Integer>();
         var identToken = varDef.ident().token();
         if (symbolManager.isVarSymbolDefined(identToken.content())) {
