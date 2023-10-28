@@ -65,8 +65,8 @@ public class Parser {
     }
 
     private Token getPreToken() {
-        if (pos -1 >= 0 && pos -1 < tokens.size()) {
-            return tokens.get(pos -1);
+        if (pos - 1 >= 0 && pos - 1 < tokens.size()) {
+            return tokens.get(pos - 1);
         }
         return new Token(LexType.LEXER_END, 0, "");
     }
@@ -77,7 +77,7 @@ public class Parser {
         List<MulExp> mulExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         var firstMulExp = mulExp();
-        if(firstMulExp == null){
+        if (firstMulExp == null) {
             return null;
         }
         mulExpList.add(firstMulExp);
@@ -110,7 +110,7 @@ public class Parser {
         if (getLexType() == LexType.LBRACE) {
             next();
         }
-        while (getLexType() != LexType.RBRACE) {
+        while (getLexType() != LexType.RBRACE) { // 题目保证了 } 不会缺失
             blockItemList.add(blockItem());
         }
         if (getLexType() == LexType.RBRACE) {
@@ -257,7 +257,7 @@ public class Parser {
 
     private Exp exp() {
         var addExp = addExp();
-        if(addExp == null){
+        if (addExp == null) {
             return null;
         }
         OutputHelper.addParserOutput("<Exp>");
@@ -340,7 +340,7 @@ public class Parser {
         //FuncRParams → Exp { ',' Exp }
         List<Exp> expList = new ArrayList<>();
         var firstExp = exp();
-        if(firstExp == null){
+        if (firstExp == null) {
             return null;
         }
         expList.add(firstExp);
@@ -457,6 +457,8 @@ public class Parser {
         }
         if (getLexType() == LexType.RPARENT) {
             next();
+        } else {
+            OutputHelper.addError(ErrorType.MISSING_RPARENT, getPreToken().lineNum(), "expected ')'");
         }
         var block = block();
         OutputHelper.addParserOutput("<MainFuncDef>");
@@ -469,7 +471,7 @@ public class Parser {
         List<UnaryExp> unaryExpList = new ArrayList<>();
         List<LexType> opLexTypeList = new ArrayList<>();
         var firstUnaryExp = unaryExp();
-        if(firstUnaryExp == null){
+        if (firstUnaryExp == null) {
             return null;
         }
         unaryExpList.add(firstUnaryExp);
@@ -508,12 +510,14 @@ public class Parser {
             exp = exp();
             if (getLexType() == LexType.RPARENT) {
                 next();
+            } else {
+                OutputHelper.addError(ErrorType.MISSING_RPARENT, getPreToken().lineNum(), "expected ')'");
             }
         } else if (getLexType() == LexType.INTCON) {
             number = number();
         } else {
             lVal = lVal();
-            if(lVal == null){
+            if (lVal == null) {
                 return null;
             }
         }
@@ -622,11 +626,11 @@ public class Parser {
         if (getLexType() == LexType.SEMICN) {
             next();
         }
-        if (getLexType() != LexType.RPARENT) {
+        if (getLexType() != LexType.RPARENT) { // 题意表示，for不会缺少右括号
             //[ForStmt3]存在
             forStmt3 = forStmt();
         }
-        if (getLexType() == LexType.RPARENT) { // 题意表示，for不会缺少右括号
+        if (getLexType() == LexType.RPARENT) {
             next();
         }
         Stmt stmt = stmt();
@@ -672,7 +676,7 @@ public class Parser {
             returnToken = getToken();
             next();
         }
-        if (getLexType() != LexType.SEMICN) {
+        if (getLexType() != LexType.SEMICN) { // 如果缺少分号会去匹配exp，最后到primaryExp的lVal
             exp = exp();
         }
         if (getLexType() == LexType.SEMICN) {
@@ -840,7 +844,7 @@ public class Parser {
         } else {
             //UnaryExp → PrimaryExp
             primaryExp = primaryExp();
-            if(primaryExp == null){
+            if (primaryExp == null) {
                 return null;
             }
         }

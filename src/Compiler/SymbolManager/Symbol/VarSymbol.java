@@ -12,8 +12,8 @@ public record VarSymbol(ValueType valueType, boolean isConst, List<Integer> valu
         if (isConst && valueType.shape().size() == indexList.size()) {
             int tSize = 1;
             for (int i = indexList.size() - 1; i >= 0; i--) {
-                tSize = tSize * valueType.shape().get(i);
                 valuesIndex += indexList.get(i) * tSize;
+                tSize = tSize * valueType.shape().get(i);
             }
             return values.get(valuesIndex);
         }

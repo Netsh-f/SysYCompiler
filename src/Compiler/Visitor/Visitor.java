@@ -170,7 +170,7 @@ public class Visitor {
             var result = visit(constInitVal.constExp());
             values.add(result.value);
         } else if (!constInitVal.constInitValList().isEmpty()) {
-            if (shape.get(0) == constInitVal.constInitValList().size()) {
+            if (!shape.isEmpty() && shape.get(0) == constInitVal.constInitValList().size()) {
                 for (ConstInitVal constInitVal1 : constInitVal.constInitValList()) {
                     var newShape = new ArrayList<>(shape);
                     newShape.remove(0);
@@ -363,15 +363,18 @@ public class Visitor {
         if (mainFuncDef == null) {
             return;
         }
+
         curFuncReturnType = ValueTypeEnum.INT;
+        symbolManager.createSymbolTable();
         visit(mainFuncDef.block(), true);
+        symbolManager.backward();
         curFuncReturnType = ValueTypeEnum.VOID;
     }
 
     private VisitResult visit(MulExp mulExp) {
         //MulExp → UnaryExp | MulExp ('*' | '/' | '%') UnaryExp
         //改写为 MulExp -> UnaryExp { ('*' | '/' | '%') UnaryExp }
-        if (mulExp == null) {
+        if (mulExp == null || mulExp.unaryExpList().isEmpty()) {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
         boolean isConst = true;
@@ -383,9 +386,6 @@ public class Visitor {
         }
         for (int i = 0; i < mulExp.opLexTypeList().size(); i++) {
             result = visit(mulExp.unaryExpList().get(1 + i));
-            if (result == null) {
-                continue;
-            }
             if (isConst && result.isConst) {
                 switch (mulExp.opLexTypeList().get(i)) {
                     case MULT -> value *= result.value;
@@ -419,7 +419,7 @@ public class Visitor {
         } else if (primaryExp.number() != null) {
             return visit(primaryExp.number());
         }
-        return null;
+        return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
     }
 
     private void visit(RelExp relExp) {
@@ -594,7 +594,7 @@ public class Visitor {
         if (varDef.initVal() != null) {
             visit(varDef.initVal());
         }
-        symbolManager.addVarSymbol(identToken.content(), new VarSymbol(new ValueType(valueTypeEnum, shape), false, null));
+        symbolManager.addVarSymbol(identToken.content(), new VarSymbol(new ValueType(valueTypeEnum, shape), false, new ArrayList<>()));
     }
 
 }
