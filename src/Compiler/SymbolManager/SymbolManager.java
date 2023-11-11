@@ -30,7 +30,7 @@ public class SymbolManager {
         funcSymbolMap.put(ident, funcSymbol);
     }
 
-    public void backward() {
+    public void traceBack() {
         if (curSymbolTable.parent() != null) {
             curSymbolTable = curSymbolTable.parent();
         }

@@ -243,7 +243,7 @@ public class Visitor {
         visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
         curFuncReturnType = ValueTypeEnum.VOID;
 
-        symbolManager.backward();
+        symbolManager.traceBack();
     }
 
     private void visit(FuncFParam funcFParam, List<VarSymbol> varSymbolList) {
@@ -367,7 +367,7 @@ public class Visitor {
         curFuncReturnType = ValueTypeEnum.INT;
         symbolManager.createSymbolTable();
         visit(mainFuncDef.block(), true);
-        symbolManager.backward();
+        symbolManager.traceBack();
         curFuncReturnType = ValueTypeEnum.VOID;
     }
 
@@ -447,7 +447,7 @@ public class Visitor {
         if (stmt instanceof StmtBlock stmtBlock) {
             symbolManager.createSymbolTable();
             visit(stmtBlock.block, false);
-            symbolManager.backward();
+            symbolManager.traceBack();
         } else if (stmt instanceof StmtBreak stmtBreak) {
             if (loop == 0) {
                 OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtBreak.token.lineNum(), "break statement not within a loop");
