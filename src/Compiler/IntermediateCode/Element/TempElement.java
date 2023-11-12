@@ -4,5 +4,5 @@
 */
 package Compiler.IntermediateCode.Element;
 
-public class TempElement {
+public class TempElement extends BaseElement{
 }

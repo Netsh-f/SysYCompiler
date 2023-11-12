@@ -4,5 +4,14 @@
 */
 package Compiler.Parser.Nodes;
 
-public record PrimaryExp(Exp exp, LVal lVal, Number number) {
+public class PrimaryExp extends BaseNode {
+    public Exp exp;
+    public LVal lVal;
+    public Number number;
+
+    public PrimaryExp(Exp exp, LVal lVal, Number number) {
+        this.exp = exp;
+        this.lVal = lVal;
+        this.number = number;
+    }
 }

@@ -12,17 +12,20 @@ import java.util.Map;
 
 public class SymbolManager {
     private SymbolTable curSymbolTable;
-    private final Map<String, FuncSymbol> funcSymbolMap = new HashMap<>();
+    private final Map<String, FuncSymbol> funcSymbolMap;
 
     public SymbolManager() {
-        curSymbolTable = new SymbolTable(null, new HashMap<>());
+        curSymbolTable = new SymbolTable(null, new HashMap<>(), 0);
+        funcSymbolMap = new HashMap<>();
     }
 
     public void createSymbolTable() {
-        curSymbolTable = new SymbolTable(curSymbolTable, new HashMap<>());
+        curSymbolTable = new SymbolTable(curSymbolTable, new HashMap<>(), curSymbolTable.depth() + 1);
     }
 
     public void addVarSymbol(String ident, VarSymbol varSymbol) {
+        varSymbol.ident = ident;
+        varSymbol.depth = curSymbolTable.depth();
         curSymbolTable.varSymbolMap().put(ident, varSymbol);
     }
 

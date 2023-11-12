@@ -6,7 +6,20 @@ package Compiler.SymbolManager.Symbol;
 
 import java.util.List;
 
-public record VarSymbol(ValueType valueType, boolean isConst, List<Integer> values) {
+public class VarSymbol {
+    public ValueType valueType;
+    public boolean isConst;
+    public List<Integer> values;
+
+    public String ident;
+    public int depth;
+
+    public VarSymbol(ValueType valueType, boolean isConst, List<Integer> values) {
+        this.valueType = valueType;
+        this.isConst = isConst;
+        this.values = values;
+    }
+
     public int getValue(List<Integer> indexList) {
         int valuesIndex = 0;
         if (isConst && valueType.shape().size() == indexList.size()) {

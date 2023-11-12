@@ -4,5 +4,5 @@
 */
 package Compiler.IntermediateCode.Element;
 
-public class StrElement {
+public class StrElement extends BaseElement{
 }

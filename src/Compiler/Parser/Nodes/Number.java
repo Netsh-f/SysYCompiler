@@ -4,5 +4,10 @@
 */
 package Compiler.Parser.Nodes;
 
-public record Number(int intConst) {
+public class Number extends BaseNode {
+    public int intConst;
+
+    public Number(int intConst) {
+        this.intConst = intConst;
+    }
 }

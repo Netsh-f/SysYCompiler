@@ -8,5 +8,12 @@ import Compiler.Lexer.LexType;
 
 import java.util.List;
 
-public record MulExp(List<UnaryExp> unaryExpList, List<LexType> opLexTypeList) {
+public class MulExp extends BaseNode {
+    public List<UnaryExp> unaryExpList;
+    public List<LexType> opLexTypeList;
+
+    public MulExp(List<UnaryExp> unaryExpList, List<LexType> opLexTypeList) {
+        this.unaryExpList = unaryExpList;
+        this.opLexTypeList = opLexTypeList;
+    }
 }

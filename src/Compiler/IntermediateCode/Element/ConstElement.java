@@ -4,5 +4,10 @@
 */
 package Compiler.IntermediateCode.Element;
 
-public class ConstElement {
+public class ConstElement extends BaseElement {
+    public int constNumber;
+
+    public ConstElement(int constNumber) {
+        this.constNumber = constNumber;
+    }
 }

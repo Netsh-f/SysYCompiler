@@ -6,5 +6,12 @@ package Compiler.Parser.Nodes;
 
 import java.util.List;
 
-public record LVal(Ident ident, List<Exp> expList) {
+public class LVal extends BaseNode {
+    public Ident ident;
+    public List<Exp> expList;
+
+    public LVal(Ident ident, List<Exp> expList) {
+        this.ident = ident;
+        this.expList = expList;
+    }
 }

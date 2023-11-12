@@ -4,5 +4,5 @@
 */
 package Compiler.IntermediateCode.Element;
 
-public class VarElement {
+public class VarElement extends BaseElement{
 }

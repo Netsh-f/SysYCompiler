@@ -9,7 +9,7 @@ import Compiler.IntermediateCode.Code.BaseCode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntermediateCodeContainer {
+public class IMCContainer {
     public List<BaseCode> intermediateCodeList = new ArrayList<>();
 
     public void addCode(BaseCode baseCode) {

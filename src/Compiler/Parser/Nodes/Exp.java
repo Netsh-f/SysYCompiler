@@ -4,5 +4,12 @@
 */
 package Compiler.Parser.Nodes;
 
-public record Exp(AddExp addExp) {
+import Compiler.IntermediateCode.Code.BaseCode;
+
+public class Exp extends BaseCode {
+    public AddExp addExp;
+
+    public Exp(AddExp addExp) {
+        this.addExp = addExp;
+    }
 }
