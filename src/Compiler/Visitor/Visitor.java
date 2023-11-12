@@ -4,8 +4,9 @@
 */
 package Compiler.Visitor;
 
-import Compiler.IntermediateCode.Code.VarDefCode;
+import Compiler.IntermediateCode.Code.*;
 import Compiler.IntermediateCode.Element.ConstElement;
+import Compiler.IntermediateCode.Element.TempElement;
 import Compiler.IntermediateCode.IMCContainer;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
@@ -68,6 +69,18 @@ public class Visitor {
                 isConst = false;
             }
         }
+
+        addExp.setElement(addExp.mulExpList.get(0).getElement());
+        for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
+            var mulExp = addExp.mulExpList.get(1 + i);
+            var tempElement = new TempElement();
+            switch (addExp.opLexTypeList.get(i)) {
+                case PLUS -> imcContainer.addCode(new AddCode(addExp.getElement(), mulExp.getElement(), tempElement));
+                case MINU -> imcContainer.addCode(new SubCode(addExp.getElement(), mulExp.getElement(), tempElement));
+            }
+            addExp.setElement(tempElement);
+        }
+
         return new VisitResult(valueType, isConst, value);
     }
 
@@ -237,6 +250,8 @@ public class Visitor {
             OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "function redefinition of '" + identToken.content() + "'");
         }
 
+        imcContainer.addCode(new LabelCode(identToken.content()));
+
         symbolManager.createSymbolTable();
 
         List<VarSymbol> varSymbolList = new ArrayList<>();
@@ -371,6 +386,8 @@ public class Visitor {
             return;
         }
 
+        imcContainer.addCode(new LabelCode("main"));
+
         curFuncReturnType = ValueTypeEnum.INT;
         symbolManager.createSymbolTable();
         visit(mainFuncDef.block(), true);
@@ -404,6 +421,20 @@ public class Visitor {
                 isConst = false;
             }
         }
+
+        mulExp.setElement(mulExp.unaryExpList.get(0).getElement());
+        for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
+            var unaryExp = mulExp.unaryExpList.get(1 + i);
+            var tempElement = new TempElement();
+            switch (mulExp.opLexTypeList.get(i)) {
+                case MULT ->
+                        imcContainer.addCode(new MultCode(mulExp.getElement(), unaryExp.getElement(), tempElement));
+                case DIV -> imcContainer.addCode(new DivCode(mulExp.getElement(), unaryExp.getElement(), tempElement));
+                case MOD -> imcContainer.addCode(new ModCode(mulExp.getElement(), unaryExp.getElement(), tempElement));
+            }
+            mulExp.setElement(tempElement);
+        }
+
         return new VisitResult(valueType, isConst, value);
     }
 
@@ -515,27 +546,37 @@ public class Visitor {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
         if (unaryExp.primaryExp != null) {
-            return visit(unaryExp.primaryExp);
+            var visitResult = visit(unaryExp.primaryExp);
+            unaryExp.setElement(unaryExp.primaryExp.getElement());
+            return visitResult;
         } else if (unaryExp.unaryOp != null && unaryExp.unaryExp != null) {
             var op = visit(unaryExp.unaryOp);
             var result = visit(unaryExp.unaryExp);
             // 没有管是常量还是变量
+            var tempElement = new TempElement();
             switch (op) {
                 case PLUS -> {
+                    imcContainer.addCode(new PositiveCode(unaryExp.unaryExp.getElement(), tempElement));
                 }
-                case MINU -> result.value = -result.value;
+                case MINU -> {
+                    result.value = -result.value;
+                    imcContainer.addCode(new NegativeCode(unaryExp.unaryExp.getElement(), tempElement));
+                }
                 case NOT -> {
                     if (result.value != 0) {
                         result.value = 0;
                     } else {
                         result.value = 1;
                     }
+                    imcContainer.addCode(new NotCode(unaryExp.unaryExp.getElement(), tempElement));
                 }
                 default -> throw new IllegalStateException("Unexpected value: " + op);
             }
+            unaryExp.setElement(tempElement);
             return result;
         } else if (unaryExp.ident != null) {
             // Ident '(' [FuncRParams] ')'
+            // TODO: 函数调用中间代码
             var identToken = unaryExp.ident.token();
             var funcSymbol = symbolManager.findFuncSymbol(identToken.content());
             if (!symbolManager.isFuncSymbolDefined(identToken.content())) {

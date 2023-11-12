@@ -4,5 +4,10 @@
 */
 package Compiler.IntermediateCode.Code;
 
+import Compiler.IntermediateCode.Element.BaseElement;
+
 public class NegativeCode extends BaseCode{
+    public NegativeCode(BaseElement element1, BaseElement result) {
+        super(element1, result);
+    }
 }

@@ -5,4 +5,5 @@
 package Compiler.IntermediateCode.Code;
 
 public class CallCode extends BaseCode{
+
 }
