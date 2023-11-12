@@ -4,6 +4,7 @@
 */
 package Compiler.Visitor;
 
+import Compiler.IntermediateCode.IntermediateCodeContainer;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
 import Compiler.Parser.Nodes.Number;
@@ -25,9 +26,13 @@ public class Visitor {
     private int loop = 0;
     private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
 
+    // intermediate code attr
+    private IntermediateCodeContainer codeContainer;
+
     public Visitor(CompUnit compUnit) {
         this.unit = compUnit;
         this.symbolManager = new SymbolManager();
+        this.codeContainer = new IntermediateCodeContainer();
     }
 
     public void run() {
@@ -77,7 +82,7 @@ public class Visitor {
         // error
     }
 
-    private void visit(Block block, boolean checkReturn) {
+    private void visit(Block block, boolean checkReturn) { // 不在这里创建新的符号表是考虑到在进入函数定义的时候，将参数算入了函数的block当中，需要提前创建新的符号表
         // Block → '{' { BlockItem } '}'
         if (block == null) {
             return;
@@ -545,7 +550,7 @@ public class Visitor {
                     for (int i = 0; i < resultList.size(); i++) {
                         var funcFParamValueType = funcSymbol.paramVarSymbolList().get(i).valueType();
                         var funcRParamValueType = resultList.get(i).valueType;
-                        if (!funcFParamValueType.equals(funcRParamValueType)) { // ValueType.equals()方法重写了，考虑了[][3]的情况
+                        if (!funcFParamValueType.isFParamToRParamValid(funcRParamValueType)) { // ValueType.equals()方法重写了，考虑了[][3]的情况
                             // 参数类型错误
                             OutputHelper.addError(ErrorType.FUNC_PARAM_TYPE_ERROR, identToken.lineNum(),
                                     "expected '" + funcFParamValueType.type() + funcFParamValueType.shape() + "' but argument is of type '" + funcRParamValueType.type() + funcRParamValueType.shape() + "'");

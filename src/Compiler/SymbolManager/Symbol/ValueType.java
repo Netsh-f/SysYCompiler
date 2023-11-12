@@ -12,7 +12,7 @@ public record ValueType(ValueTypeEnum type, List<Integer> shape) {
 //    {-1, 2} 指的是 int a[][2] 这样的函数形参
 //    shape.length就是维度
 //    其值一般不为0
-    public boolean equals(Object obj) {
+    public boolean isFParamToRParamValid(Object obj) {
         if (this == obj) {
             return true;
         }
