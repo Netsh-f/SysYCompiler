@@ -4,6 +4,10 @@
 */
 package Compiler.Visitor;
 
+import Compiler.LLVMIR.IRManager;
+import Compiler.LLVMIR.IRModule;
+import Compiler.LLVMIR.Instructions.RetInst;
+import Compiler.LLVMIR.Value;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
 import Compiler.Parser.Nodes.Number;
@@ -25,14 +29,18 @@ public class Visitor {
     private int loop = 0;
     private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
 
+    // LLVM IR attr
+    private IRManager irManager;
 
     public Visitor(CompUnit compUnit) {
         this.unit = compUnit;
         this.symbolManager = new SymbolManager();
+        this.irManager = new IRManager();
     }
 
-    public void run() {
+    public IRModule run() {
         visit(this.unit);
+        return irManager.getModule();
     }
 
     private VisitResult visit(AddExp addExp) {
@@ -240,9 +248,14 @@ public class Visitor {
         }
 
         symbolManager.addFuncSymbol(identToken.content(), new FuncSymbol(returnValueType, varSymbolList));
-
         curFuncReturnType = returnValueType; // 记录当前函数的返回类型，为检查return语句错误做准备
+
+        irManager.addFunctionDecl(curFuncReturnType, identToken.content());
+
         visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
+        if (returnValueType == ValueTypeEnum.VOID) { // 如果函数是void，无论是否有"return;"，均在此添加指令
+            irManager.addInstruction(new RetInst(new Value(Value.IRValueType.VOID)));
+        }
         curFuncReturnType = ValueTypeEnum.VOID;
 
         symbolManager.traceBack();
@@ -368,6 +381,9 @@ public class Visitor {
 
         curFuncReturnType = ValueTypeEnum.INT;
         symbolManager.createSymbolTable();
+
+        irManager.addFunctionDecl(curFuncReturnType, "main");
+
         visit(mainFuncDef.block(), true);
         symbolManager.traceBack();
         curFuncReturnType = ValueTypeEnum.VOID;
@@ -500,6 +516,7 @@ public class Visitor {
                     OutputHelper.addError(ErrorType.VOID_RETURN, stmtReturn.returnToken.lineNum(), "'return' with a value, in function returning void");
                 }
                 visit(stmtReturn.exp);
+                // TODO: retinst with value
             }
         }
     }

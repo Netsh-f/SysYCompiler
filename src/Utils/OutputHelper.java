@@ -4,6 +4,7 @@
 */
 package Utils;
 
+import Compiler.LLVMIR.IRModule;
 import Compiler.Lexer.Token;
 import Utils.Error.ErrorData;
 import Utils.Error.ErrorType;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 public class OutputHelper {
     private static final String outputFileName = "output.txt";
+    private static final String llvmIROutputFileName = "llvm_ir.txt";
     private static final String errorOutputFileName = "error.txt";
 
     public static boolean parserOutputSwitch = true;
@@ -25,6 +27,10 @@ public class OutputHelper {
     private static final List<ErrorData> errorDataList = new ArrayList<>();
 
     private OutputHelper() {
+    }
+
+    public static void llvmIROutput(IRModule irModule) {
+        FileHelper.writeToFile(llvmIROutputFileName, irModule.toString());
     }
 
     public static void addParserOutput(String s) {

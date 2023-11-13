@@ -6,8 +6,21 @@ package Compiler.LLVMIR;
 
 import Compiler.LLVMIR.Instructions.Instruction;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BasicBlock extends Value {
-    private List<Instruction> instructionList;
+    public List<Instruction> instructionList;
+    public int label;
+
+    public BasicBlock(int label) {
+        this.label = label;
+        this.instructionList = new ArrayList<>();
+    }
+
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        instructionList.forEach(stringBuilder::append);
+        return stringBuilder.toString();
+    }
 }
