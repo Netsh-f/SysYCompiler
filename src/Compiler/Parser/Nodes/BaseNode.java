@@ -4,5 +4,8 @@
 */
 package Compiler.Parser.Nodes;
 
+import Compiler.LLVMIR.Operand.Operand;
+
 public class BaseNode {
+    public Operand operand;
 }

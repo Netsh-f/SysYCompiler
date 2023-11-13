@@ -16,7 +16,7 @@ public class Compiler {
         var tokens = new Lexer(source).run();
 //        OutputHelper.LexerOutput(tokens);
         var compUnit = new Parser(tokens).run();
-//        OutputHelper.ParserOutput();
+        OutputHelper.ParserOutput();
         var irModule = new Visitor(compUnit).run();
         OutputHelper.ErrorOutput();
         OutputHelper.llvmIROutput(irModule);

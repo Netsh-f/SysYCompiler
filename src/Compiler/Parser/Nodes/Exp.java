@@ -4,7 +4,7 @@
 */
 package Compiler.Parser.Nodes;
 
-public class Exp {
+public class Exp extends BaseNode{
     public AddExp addExp;
 
     public Exp(AddExp addExp) {

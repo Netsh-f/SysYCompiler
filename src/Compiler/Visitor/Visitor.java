@@ -6,7 +6,9 @@ package Compiler.Visitor;
 
 import Compiler.LLVMIR.IRManager;
 import Compiler.LLVMIR.IRModule;
+import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Instructions.RetInst;
+import Compiler.LLVMIR.Operand.ConstantOperand;
 import Compiler.LLVMIR.Value;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
@@ -30,7 +32,7 @@ public class Visitor {
     private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
 
     // LLVM IR attr
-    private IRManager irManager;
+    private final IRManager irManager;
 
     public Visitor(CompUnit compUnit) {
         this.unit = compUnit;
@@ -69,6 +71,19 @@ public class Visitor {
             } else {
                 isConst = false;
             }
+        }
+
+        addExp.operand = addExp.mulExpList.get(0).operand;
+        for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
+            var mulExp = addExp.mulExpList.get(1 + i);
+            var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
+            switch (addExp.opLexTypeList.get(i)) {
+                case PLUS ->
+                        irManager.addInstruction(new AddInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
+                case MINU ->
+                        irManager.addInstruction(new SubInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
+            }
+            addExp.operand = tempOperand;
         }
 
         return new VisitResult(valueType, isConst, value);
@@ -162,6 +177,7 @@ public class Visitor {
         visit(constDef.constInitVal(), shape, values); // 在这里面进行维数及其长度对比，和数值赋值
 
         symbolManager.addVarSymbol(identToken.content(), new VarSymbol(new ValueType(valueTypeEnum, shape), true, values));
+        irManager.addGlobalConst(identToken.content(), shape, values);
     }
 
     private VisitResult visit(ConstExp constExp) {
@@ -216,7 +232,9 @@ public class Visitor {
         if (exp == null) {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
-        return visit(exp.addExp);
+        var result = visit(exp.addExp);
+        exp.operand = exp.addExp.operand;
+        return result;
     }
 
     private void visit(ForStmt forStmt) {
@@ -317,15 +335,23 @@ public class Visitor {
         return ValueTypeEnum.VOID;
     }
 
-    private void visit(InitVal initVal) {
+    private void visit(InitVal initVal, List<Integer> shape, List<Integer> values) {
 //        InitVal → Exp | '{' [ InitVal { ',' InitVal } ] '}'// 1.表达式初值 2.一维数组初值 3.二维数组初值
         if (initVal == null) {
             return;
         }
         if (initVal.exp() != null) {
-            visit(initVal.exp());
-        } else {
-            initVal.initValList().forEach(this::visit);
+            var result = visit(initVal.exp());
+            values.add(result.value);
+        } else if (!initVal.initValList().isEmpty()) {
+            if (!shape.isEmpty() && shape.get(0) == initVal.initValList().size()) {
+                for (InitVal initVal1 : initVal.initValList()) {
+                    var newShape = new ArrayList<>(shape);
+                    newShape.remove(0);
+                    visit(initVal1, newShape, values); // same to constInitVal 为了在全局变量初始化时计算出初始值
+                }
+            }
+            // else 维度的长度不匹配，error
         }
     }
 
@@ -416,6 +442,21 @@ public class Visitor {
             }
         }
 
+        mulExp.operand = mulExp.unaryExpList.get(0).operand;
+        for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
+            var unaryExp = mulExp.unaryExpList.get(1 + i);
+            var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
+            switch (mulExp.opLexTypeList.get(i)) {
+                case MULT ->
+                        irManager.addInstruction(new MulInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+                case DIV ->
+                        irManager.addInstruction(new SdivInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+                case MOD ->
+                        irManager.addInstruction(new SremInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+            }
+            mulExp.operand = tempOperand;
+        }
+
         return new VisitResult(valueType, isConst, value);
     }
 
@@ -423,6 +464,7 @@ public class Visitor {
         if (number == null) {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
+        number.operand = new ConstantOperand(number.intConst);
         return new VisitResult(new ValueType(ValueTypeEnum.INT, new ArrayList<>()), true, number.intConst);
     }
 
@@ -432,11 +474,15 @@ public class Visitor {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
         if (primaryExp.exp != null) {
-            return visit(primaryExp.exp);
+            var result = visit(primaryExp.exp);
+            primaryExp.operand = primaryExp.exp.operand;
+            return result;
         } else if (primaryExp.lVal != null) {
             return visit(primaryExp.lVal, false);
         } else if (primaryExp.number != null) {
-            return visit(primaryExp.number);
+            var result = visit(primaryExp.number);
+            primaryExp.operand = primaryExp.number.operand;
+            return result;
         }
         return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
     }
@@ -516,7 +562,7 @@ public class Visitor {
                     OutputHelper.addError(ErrorType.VOID_RETURN, stmtReturn.returnToken.lineNum(), "'return' with a value, in function returning void");
                 }
                 visit(stmtReturn.exp);
-                // TODO: retinst with value
+                irManager.addInstruction(new RetInst(stmtReturn.exp.operand));
             }
         }
     }
@@ -527,15 +573,22 @@ public class Visitor {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
         if (unaryExp.primaryExp != null) {
-            return visit(unaryExp.primaryExp);
+            var result = visit(unaryExp.primaryExp);
+            unaryExp.operand = unaryExp.primaryExp.operand;
+            return result;
         } else if (unaryExp.unaryOp != null && unaryExp.unaryExp != null) {
             var op = visit(unaryExp.unaryOp);
             var result = visit(unaryExp.unaryExp);
             // 没有管是常量还是变量
             switch (op) {
                 case PLUS -> {
+                    unaryExp.operand = unaryExp.unaryExp.operand;
                 }
-                case MINU -> result.value = -result.value;
+                case MINU -> {
+                    result.value = -result.value;
+                    unaryExp.operand = irManager.allocTempOperand(Value.IRValueType.I32);
+                    irManager.addInstruction(new SubInst(unaryExp.operand, Value.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
+                }
                 case NOT -> {
                     if (result.value != 0) {
                         result.value = 0;
@@ -603,6 +656,8 @@ public class Visitor {
             return;
         }
         var shape = new ArrayList<Integer>();
+        var values = new ArrayList<Integer>();
+
         var identToken = varDef.ident().token();
         if (symbolManager.isVarSymbolDefined(identToken.content())) {
             OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "var redefinition of '" + identToken.content() + "'");
@@ -611,10 +666,12 @@ public class Visitor {
 
         varDef.constExpList().forEach(constExp -> shape.add(visit(constExp).value));
 
-        if (varDef.initVal() != null) {
-            visit(varDef.initVal());
+        if (varDef.initVal() != null) { // 如果有初始值，特别是全局变量中，其一定为constinitval
+            visit(varDef.initVal(), shape, values);
         }
+
         VarSymbol varSymbol = new VarSymbol(new ValueType(valueTypeEnum, shape), false, new ArrayList<>());
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
+        irManager.addGlobalVar(identToken.content(), shape, values);
     }
 }

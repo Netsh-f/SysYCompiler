@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ -z "$1" ]; then
+	echo "Usage: lcc <source.ll>"
+fi
+llvm-link $1 lib/lib.ll -S -o llc_out_total.ll
+if [ $? == 0 ]; then
+	lli llc_out_total.ll
+	echo "LLVM IR successfully runned with exit code $?"
+fi
