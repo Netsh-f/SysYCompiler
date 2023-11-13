@@ -4,9 +4,7 @@
 */
 package Compiler.Parser.Nodes;
 
-import Compiler.IntermediateCode.Code.BaseCode;
-
-public class Exp extends BaseCode {
+public class Exp {
     public AddExp addExp;
 
     public Exp(AddExp addExp) {
