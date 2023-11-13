@@ -531,7 +531,6 @@ public class Visitor {
             return result;
         } else if (unaryExp.ident != null) {
             // Ident '(' [FuncRParams] ')'
-            // TODO: 函数调用中间代码
             var identToken = unaryExp.ident.token();
             var funcSymbol = symbolManager.findFuncSymbol(identToken.content());
             if (!symbolManager.isFuncSymbolDefined(identToken.content())) {
