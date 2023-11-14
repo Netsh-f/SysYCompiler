@@ -29,9 +29,9 @@ public class GlobalConst extends GlobalDecl {
         //@x = dso_local constant i32 10, align 4
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("@").append(this.ident).append(" = dso_local ");
-        if(isConst){
+        if (isConst) {
             stringBuilder.append("constant ");
-        }else{
+        } else {
             stringBuilder.append("global ");
         }
 
@@ -50,19 +50,32 @@ public class GlobalConst extends GlobalDecl {
 
     private String valueToString(IRValueType type, List<Integer> shape, List<Integer> values, AtomicInteger index) {
         if (shape.isEmpty()) {
-            return typeToString(type, shape, 0) + " " + values.get(index.getAndIncrement());
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(typeToString(type, shape, 0)).append(" ");
+            if (index.get() < values.size()) {
+                stringBuilder.append(values.get(index.getAndIncrement()));
+            } else {
+                stringBuilder.append("0"); // 全局非常量，没有initVal，则赋值0
+            }
+            return stringBuilder.toString();
         } else {
             var newShape = new ArrayList<>(shape);
             newShape.remove(0);
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(typeToString(type, shape, 0)).append(" [");
-            for (int i = 0; i < shape.get(0); i++) {
-                stringBuilder.append(valueToString(type, newShape, values, index));
-                if (i < shape.get(0) - 1) {
-                    stringBuilder.append(", ");
+            stringBuilder.append(typeToString(type, shape, 0)).append(" ");
+            if (index.get() >= values.size()) {
+                stringBuilder.append("zeroinitializer"); // 全局非常量，initVal不完整的话，则赋值0，使用zeroinitializer
+                // 但事实上，在语法分析的时候，如果数组初始值长度和定义的长度不一样，不会返回正确的values，且这种情况在sysy文法中不合法，故不再处理
+            } else {
+                stringBuilder.append("[");
+                for (int i = 0; i < shape.get(0); i++) {
+                    stringBuilder.append(valueToString(type, newShape, values, index));
+                    if (i < shape.get(0) - 1) {
+                        stringBuilder.append(", ");
+                    }
                 }
+                stringBuilder.append("]");
             }
-            stringBuilder.append("]");
             return stringBuilder.toString();
         }
     }
