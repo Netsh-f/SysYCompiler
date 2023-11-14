@@ -7,12 +7,14 @@ package Compiler.LLVMIR;
 public class Value {
     public enum IRValueType {
         I32,
-        VOID;
+        VOID,
+        I1;
 
         public String toString() {
             return switch (this) {
                 case VOID -> "void";
                 case I32 -> "i32";
+                case I1 -> "i1";
             };
         }
     }

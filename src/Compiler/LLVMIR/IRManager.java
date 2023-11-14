@@ -2,16 +2,14 @@ package Compiler.LLVMIR;
 
 import Compiler.LLVMIR.Global.Function;
 import Compiler.LLVMIR.Global.GlobalConst;
-import Compiler.LLVMIR.Global.GlobalVar;
 import Compiler.LLVMIR.Instructions.Instruction;
-import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
 import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 
 import java.util.List;
 
 public class IRManager {
-    private IRModule module;
+    private final IRModule module;
     private Function currentFunction;
     private BasicBlock currentBasicBlock;
 
@@ -24,11 +22,11 @@ public class IRManager {
     }
 
     public void addGlobalVar(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalVar(ident, shape, values));
+        this.module.globalDeclList.add(new GlobalConst(ident, shape, Value.IRValueType.I32, values, false));
     }
 
     public void addGlobalConst(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalConst(ident, shape, Value.IRValueType.I32, values));
+        this.module.globalDeclList.add(new GlobalConst(ident, shape, Value.IRValueType.I32, values, true));
     }
 
     public void addInstruction(Instruction instruction) {
