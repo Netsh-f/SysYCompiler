@@ -4,19 +4,17 @@
 */
 package Compiler.LLVMIR.Instructions;
 
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.Operand;
-import Compiler.SymbolManager.Symbol.ValueType;
 
 public class AllocaInst extends Instruction {
     public Operand resultOperand;
-    public ValueType valueType;
 
-    public AllocaInst(Operand resultOperand, ValueType valueType) {
+    public AllocaInst(Operand resultOperand) {
         this.resultOperand = resultOperand;
-        this.valueType = valueType;
     }
 
     public String toString() {
-        return resultOperand + " = alloca " + valueType + "\n";
+        return resultOperand + " = alloca " + this.resultOperand.irType + "\n";
     }
 }

@@ -4,6 +4,7 @@
 */
 package Compiler.LLVMIR.Instructions.Quadruple;
 
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.Operand;
 
 public class SremInst extends QuadrupleInst {
@@ -11,7 +12,7 @@ public class SremInst extends QuadrupleInst {
     // This instruction can also take vector versions of the values in which case the elements must be integers.
     // https://llvm.org/docs/LangRef.html#srem-instruction
 
-    public SremInst(Operand resultOperand, IRValueType type, Operand operand1, Operand operand2) {
+    public SremInst(Operand resultOperand, IRType.IRValueType type, Operand operand1, Operand operand2) {
         super(resultOperand, type, operand1, operand2);
     }
 

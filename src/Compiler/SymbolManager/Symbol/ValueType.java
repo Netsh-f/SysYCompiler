@@ -4,6 +4,7 @@
 */
 package Compiler.SymbolManager.Symbol;
 
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Value;
 
 import java.util.List;
@@ -35,21 +36,5 @@ public record ValueType(ValueTypeEnum type, List<Integer> shape) {
             return false;
         }
         return true;
-    }
-
-    public String toString(){
-        Value.IRValueType irValueType = switch (type){
-            case INT -> Value.IRValueType.I32;
-            case VOID -> Value.IRValueType.VOID;
-        };
-        return typeToString(irValueType, shape, 0);
-    }
-
-    private String typeToString(Value.IRValueType type, List<Integer> shape, int floor) {
-        if (floor == shape.size()) {
-            return type.toString();
-        } else {
-            return "[" + shape.get(floor) + " x " + typeToString(type, shape, floor + 1) + "]";
-        }
     }
 }

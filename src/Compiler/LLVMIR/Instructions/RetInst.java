@@ -1,21 +1,22 @@
 package Compiler.LLVMIR.Instructions;
 
-import Compiler.LLVMIR.Value;
+import Compiler.LLVMIR.IRType;
+import Compiler.LLVMIR.Operand.Operand;
 
 public class RetInst extends Instruction {
-    public Value value;
+    public Operand operand;
 
-    public RetInst(Value value) {
-        this.value = value;
+    public RetInst(Operand operand) {
+        this.operand = operand;
     }
 
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("ret ");
-        if (this.value.type == IRValueType.VOID) {
+        if (this.operand.irType.irValueType == IRType.IRValueType.VOID) {
             stringBuilder.append("void");
         } else {
-            stringBuilder.append(this.value.type).append(" ").append(this.value);
+            stringBuilder.append(this.operand.irType).append(" ").append(this.operand);
         }
         stringBuilder.append("\n");
         return stringBuilder.toString();

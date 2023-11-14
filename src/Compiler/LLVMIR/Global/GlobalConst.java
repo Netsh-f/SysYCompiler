@@ -4,6 +4,8 @@
 */
 package Compiler.LLVMIR.Global;
 
+import Compiler.LLVMIR.IRType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,11 +13,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GlobalConst extends GlobalDecl {
     public String ident;
     public List<Integer> shape;
-    public IRValueType valueType;
+    public IRType.IRValueType valueType;
     public List<Integer> values;
     public boolean isConst;
 
-    public GlobalConst(String ident, List<Integer> shape, IRValueType valueType, List<Integer> values, boolean isConst) {
+    public GlobalConst(String ident, List<Integer> shape, IRType.IRValueType valueType, List<Integer> values, boolean isConst) {
         this.ident = ident;
         this.shape = shape;
         this.valueType = valueType;
@@ -40,7 +42,7 @@ public class GlobalConst extends GlobalDecl {
         return stringBuilder.toString();
     }
 
-    private String typeToString(IRValueType type, List<Integer> shape, int floor) {
+    private String typeToString(IRType.IRValueType type, List<Integer> shape, int floor) {
         if (floor == shape.size()) {
             return type.toString();
         } else {
@@ -48,7 +50,7 @@ public class GlobalConst extends GlobalDecl {
         }
     }
 
-    private String valueToString(IRValueType type, List<Integer> shape, List<Integer> values, AtomicInteger index) {
+    private String valueToString(IRType.IRValueType type, List<Integer> shape, List<Integer> values, AtomicInteger index) {
         if (shape.isEmpty()) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append(typeToString(type, shape, 0)).append(" ");

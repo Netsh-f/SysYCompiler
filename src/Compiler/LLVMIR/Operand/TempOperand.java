@@ -4,12 +4,19 @@
 */
 package Compiler.LLVMIR.Operand;
 
+import Compiler.LLVMIR.IRType;
+
 public class TempOperand extends Operand {
     public int label;
 
-    public TempOperand(int label, IRValueType type) {
+    public TempOperand(int label, IRType.IRValueType type) {
         this.label = label;
-        this.type = type;
+        this.irType = new IRType(type);
+    }
+
+    public TempOperand(int label, IRType irType) {
+        this.label = label;
+        this.irType = irType;
     }
 
     public String toString() {

@@ -5,6 +5,7 @@
 package Compiler.LLVMIR.Global;
 
 import Compiler.LLVMIR.BasicBlock;
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.TempOperand;
 
 import java.awt.*;
@@ -15,10 +16,10 @@ public class Function extends GlobalDecl {
 
     public List<BasicBlock> basicBlockList;
     public String ident;
-    public IRValueType returnType;
+    public IRType.IRValueType returnType;
     private LabelManager labelManager;
 
-    public Function(IRValueType type, String ident) {
+    public Function(IRType.IRValueType type, String ident) {
         this.labelManager = new LabelManager();
         this.basicBlockList = new ArrayList<>();
         basicBlockList.add(new BasicBlock(labelManager.allocLabel()));
@@ -26,7 +27,7 @@ public class Function extends GlobalDecl {
         this.ident = ident;
     }
 
-    public TempOperand allocTempOperand(IRValueType type) {
+    public TempOperand allocTempOperand(IRType.IRValueType type) {
         return new TempOperand(labelManager.allocLabel(), type);
     }
 

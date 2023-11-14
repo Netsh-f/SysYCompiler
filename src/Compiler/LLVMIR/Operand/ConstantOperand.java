@@ -4,11 +4,13 @@
 */
 package Compiler.LLVMIR.Operand;
 
+import Compiler.LLVMIR.IRType;
+
 public class ConstantOperand extends Operand {
     public int intNumber;
 
     public ConstantOperand(int intNumber) {
-        this.type = IRValueType.I32;
+        this.irType = new IRType(IRType.IRValueType.I32);
         this.intNumber = intNumber;
     }
 

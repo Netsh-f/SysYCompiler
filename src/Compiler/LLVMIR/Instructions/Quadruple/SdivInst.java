@@ -4,11 +4,12 @@
 */
 package Compiler.LLVMIR.Instructions.Quadruple;
 
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.Operand;
 
 public class SdivInst extends QuadrupleInst{
     // S means signed
-    public SdivInst(Operand resultOperand, IRValueType type, Operand operand1, Operand operand2) {
+    public SdivInst(Operand resultOperand, IRType.IRValueType type, Operand operand1, Operand operand2) {
         super(resultOperand, type, operand1, operand2);
     }
 

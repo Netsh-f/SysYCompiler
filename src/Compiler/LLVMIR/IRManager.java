@@ -21,16 +21,16 @@ public class IRManager {
         return currentFunction == null;
     }
 
-    public TempOperand allocTempOperand(Value.IRValueType type) {
+    public TempOperand allocTempOperand(IRType.IRValueType type) {
         return currentFunction.allocTempOperand(type);
     }
 
     public void addGlobalVar(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalConst(ident, shape, Value.IRValueType.I32, values, false));
+        this.module.globalDeclList.add(new GlobalConst(ident, shape, IRType.IRValueType.I32, values, false));
     }
 
     public void addGlobalConst(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalConst(ident, shape, Value.IRValueType.I32, values, true));
+        this.module.globalDeclList.add(new GlobalConst(ident, shape, IRType.IRValueType.I32, values, true));
     }
 
     public void addInstruction(Instruction instruction) {
@@ -39,8 +39,8 @@ public class IRManager {
 
     public void addFunctionDecl(ValueTypeEnum type, String ident) {
         var functionType = switch (type) {
-            case VOID -> Value.IRValueType.VOID;
-            case INT -> Value.IRValueType.I32;
+            case VOID -> IRType.IRValueType.VOID;
+            case INT -> IRType.IRValueType.I32;
         };
         this.currentFunction = new Function(functionType, ident);
         this.currentBasicBlock = this.currentFunction.basicBlockList.get(0);

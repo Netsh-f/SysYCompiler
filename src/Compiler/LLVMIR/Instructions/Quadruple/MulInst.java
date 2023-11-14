@@ -4,10 +4,11 @@
 */
 package Compiler.LLVMIR.Instructions.Quadruple;
 
+import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.Operand;
 
 public class MulInst extends QuadrupleInst{
-    public MulInst(Operand resultOperand, IRValueType type, Operand operand1, Operand operand2) {
+    public MulInst(Operand resultOperand, IRType.IRValueType type, Operand operand1, Operand operand2) {
         super(resultOperand, type, operand1, operand2);
     }
 

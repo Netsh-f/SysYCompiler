@@ -5,11 +5,28 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
-import Compiler.SymbolManager.Symbol.ValueType;
 
-public class GetElementPtrInst extends Instruction{
-    public Operand reaultOperand;
-    public ValueType valueType;
-    public Operand ptrVal;
+import java.util.List;
 
+public class GetElementPtrInst extends Instruction {
+    public Operand resultOperand;
+    public Operand addrOperand;
+    public List<Integer> indexes;
+
+    public GetElementPtrInst(Operand resultOperand, Operand addrOperand, List<Integer> indexes) {
+        this.resultOperand = resultOperand;
+        this.addrOperand = addrOperand;
+        this.indexes = indexes;
+    }
+
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(this.resultOperand).append(" = getelementptr ").append(addrOperand.irType)
+                .append(", ").append(addrOperand.irType).append("*").append(addrOperand);
+        indexes.forEach(index -> {
+            stringBuilder.append(", ").append(addrOperand.irType.irValueType).append(" ").append(index);
+        });
+        stringBuilder.append("\n");
+        return stringBuilder.toString();
+    }
 }
