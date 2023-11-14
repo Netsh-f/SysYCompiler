@@ -17,6 +17,10 @@ public class IRManager {
         this.module = new IRModule();
     }
 
+    public boolean isInGlobal() {
+        return currentFunction == null;
+    }
+
     public TempOperand allocTempOperand(Value.IRValueType type) {
         return currentFunction.allocTempOperand(type);
     }

@@ -6,9 +6,11 @@ package Compiler.Visitor;
 
 import Compiler.LLVMIR.IRManager;
 import Compiler.LLVMIR.IRModule;
+import Compiler.LLVMIR.Instructions.AllocaInst;
 import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Instructions.RetInst;
 import Compiler.LLVMIR.Operand.ConstantOperand;
+import Compiler.LLVMIR.Operand.TempOperand;
 import Compiler.LLVMIR.Value;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
@@ -73,17 +75,21 @@ public class Visitor {
             }
         }
 
-        addExp.operand = addExp.mulExpList.get(0).operand;
-        for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
-            var mulExp = addExp.mulExpList.get(1 + i);
-            var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
-            switch (addExp.opLexTypeList.get(i)) {
-                case PLUS ->
-                        irManager.addInstruction(new AddInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
-                case MINU ->
-                        irManager.addInstruction(new SubInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
+        if (!isConst) { // 常量优化
+            addExp.operand = addExp.mulExpList.get(0).operand;
+            for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
+                var mulExp = addExp.mulExpList.get(1 + i);
+                var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
+                switch (addExp.opLexTypeList.get(i)) {
+                    case PLUS ->
+                            irManager.addInstruction(new AddInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
+                    case MINU ->
+                            irManager.addInstruction(new SubInst(tempOperand, Value.IRValueType.I32, addExp.operand, mulExp.operand));
+                }
+                addExp.operand = tempOperand;
             }
-            addExp.operand = tempOperand;
+        } else {
+            addExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
         }
 
         return new VisitResult(valueType, isConst, value);
@@ -442,19 +448,21 @@ public class Visitor {
             }
         }
 
-        mulExp.operand = mulExp.unaryExpList.get(0).operand;
-        for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
-            var unaryExp = mulExp.unaryExpList.get(1 + i);
-            var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
-            switch (mulExp.opLexTypeList.get(i)) {
-                case MULT ->
-                        irManager.addInstruction(new MulInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
-                case DIV ->
-                        irManager.addInstruction(new SdivInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
-                case MOD ->
-                        irManager.addInstruction(new SremInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+        if (!isConst) { // 常量优化
+            mulExp.operand = mulExp.unaryExpList.get(0).operand;
+            for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
+                var unaryExp = mulExp.unaryExpList.get(1 + i);
+                var tempOperand = irManager.allocTempOperand(Value.IRValueType.I32);
+                switch (mulExp.opLexTypeList.get(i)) {
+                    case MULT ->
+                            irManager.addInstruction(new MulInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+                    case DIV ->
+                            irManager.addInstruction(new SdivInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+                    case MOD ->
+                            irManager.addInstruction(new SremInst(tempOperand, Value.IRValueType.I32, mulExp.operand, unaryExp.operand));
+                }
+                mulExp.operand = tempOperand;
             }
-            mulExp.operand = tempOperand;
         }
 
         return new VisitResult(valueType, isConst, value);
@@ -587,7 +595,9 @@ public class Visitor {
                 case MINU -> {
                     result.value = -result.value;
                     unaryExp.operand = irManager.allocTempOperand(Value.IRValueType.I32);
-                    irManager.addInstruction(new SubInst(unaryExp.operand, Value.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
+                    if (!result.isConst) { // 常量优化
+                        irManager.addInstruction(new SubInst(unaryExp.operand, Value.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
+                    }
                 }
                 case NOT -> {
                     if (result.value != 0) {
@@ -666,12 +676,20 @@ public class Visitor {
 
         varDef.constExpList().forEach(constExp -> shape.add(visit(constExp).value));
 
+        VisitResult initValResult;
         if (varDef.initVal() != null) { // 如果有初始值，特别是全局变量中，其一定为constinitval
             visit(varDef.initVal(), shape, values);
         }
 
-        VarSymbol varSymbol = new VarSymbol(new ValueType(valueTypeEnum, shape), false, new ArrayList<>());
+        var valueType = new ValueType(valueTypeEnum, shape);
+        VarSymbol varSymbol = new VarSymbol(valueType, false, new ArrayList<>());
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
-        irManager.addGlobalVar(identToken.content(), shape, values);
+        if (irManager.isInGlobal()) {
+            irManager.addGlobalVar(identToken.content(), shape, values);
+        } else {
+            varSymbol.operand = irManager.allocTempOperand(Value.IRValueType.I32);
+            irManager.addInstruction(new AllocaInst(varSymbol.operand, valueType));
+
+        }
     }
 }

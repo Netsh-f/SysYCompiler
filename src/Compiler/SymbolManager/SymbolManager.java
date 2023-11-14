@@ -15,17 +15,15 @@ public class SymbolManager {
     private final Map<String, FuncSymbol> funcSymbolMap;
 
     public SymbolManager() {
-        curSymbolTable = new SymbolTable(null, new HashMap<>(), 0);
+        curSymbolTable = new SymbolTable(null, new HashMap<>());
         funcSymbolMap = new HashMap<>();
     }
 
     public void createSymbolTable() {
-        curSymbolTable = new SymbolTable(curSymbolTable, new HashMap<>(), curSymbolTable.depth() + 1);
+        curSymbolTable = new SymbolTable(curSymbolTable, new HashMap<>());
     }
 
     public void addVarSymbol(String ident, VarSymbol varSymbol) {
-        varSymbol.ident = ident;
-        varSymbol.depth = curSymbolTable.depth();
         curSymbolTable.varSymbolMap().put(ident, varSymbol);
     }
 

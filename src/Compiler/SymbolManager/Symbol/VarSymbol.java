@@ -4,6 +4,8 @@
 */
 package Compiler.SymbolManager.Symbol;
 
+import Compiler.LLVMIR.Operand.Operand;
+
 import java.util.List;
 
 public class VarSymbol {
@@ -11,8 +13,7 @@ public class VarSymbol {
     public boolean isConst;
     public List<Integer> values;
 
-    public String ident;
-    public int depth;
+    public Operand operand;
 
     public VarSymbol(ValueType valueType, boolean isConst, List<Integer> values) {
         this.valueType = valueType;
