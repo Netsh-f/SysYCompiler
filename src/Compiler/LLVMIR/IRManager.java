@@ -20,6 +20,10 @@ public class IRManager {
     public boolean isInGlobal() {
         return currentFunction == null;
     }
+    public TempOperand allocTempOperand(IRType irType) {
+        return currentFunction.allocTempOperand(irType);
+    }
+
 
     public TempOperand allocTempOperand(IRType.IRValueType type) {
         return currentFunction.allocTempOperand(type);

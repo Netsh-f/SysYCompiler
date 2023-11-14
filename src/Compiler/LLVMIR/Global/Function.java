@@ -27,6 +27,11 @@ public class Function extends GlobalDecl {
         this.ident = ident;
     }
 
+    public TempOperand allocTempOperand(IRType irType) {
+        return new TempOperand(labelManager.allocLabel(), irType);
+    }
+
+
     public TempOperand allocTempOperand(IRType.IRValueType type) {
         return new TempOperand(labelManager.allocLabel(), type);
     }

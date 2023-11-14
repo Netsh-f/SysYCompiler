@@ -18,7 +18,7 @@ public class GlobalConst extends GlobalDecl {
     public boolean isConst;
 
     public GlobalConst(String ident, List<Integer> shape, IRType.IRValueType valueType, List<Integer> values, boolean isConst) {
-        this.ident = ident;
+        this.ident = "@" + ident;
         this.shape = shape;
         this.valueType = valueType;
         this.values = values;
@@ -30,7 +30,7 @@ public class GlobalConst extends GlobalDecl {
         //@a = dso_local constant [2 x i32] [i32 1, i32 2], align 4
         //@x = dso_local constant i32 10, align 4
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("@").append(this.ident).append(" = dso_local ");
+        stringBuilder.append(this.ident).append(" = dso_local ");
         if (isConst) {
             stringBuilder.append("constant ");
         } else {
