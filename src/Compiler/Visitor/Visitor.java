@@ -548,7 +548,7 @@ public class Visitor {
         } else if (primaryExp.lVal != null) {
             // LVal
             var result = visit(primaryExp.lVal, false);
-            primaryExp.operand = result.
+//            primaryExp.operand = result.
             return result;
         } else if (primaryExp.number != null) {
             // Number
