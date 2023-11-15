@@ -190,7 +190,7 @@ public class Visitor {
             varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addGlobalConst(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, shape));
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 
@@ -286,7 +286,7 @@ public class Visitor {
         if (forStmt == null) {
             return;
         }
-        visit(forStmt.lVal(), true); // 题目没有要求在这个地方检查是否改变常量
+        visit(forStmt.lVal(), true, false); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
     }
 
@@ -351,6 +351,7 @@ public class Visitor {
             }
             varSymbol = new VarSymbol(new ValueType(valueTypeEnum, shape), false, null);
         }
+        varSymbol.isFuncFParam = true; // 留给lVal生成llvm的load时使用
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
         varSymbolList.add(varSymbol);
     }
@@ -435,7 +436,7 @@ public class Visitor {
         lOrExp.lAndExpList().forEach(this::visit);
     }
 
-    private VisitResult visit(LVal lVal, boolean checkConst) {
+    private VisitResult visit(LVal lVal, boolean checkConst, boolean isFromPrimaryExp) {
         //  LVal → Ident {'[' Exp ']'}
         if (lVal == null) {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
@@ -459,12 +460,41 @@ public class Visitor {
             }
 
             // llvm
-            if (indexList.isEmpty()) {
-                // 如果没有取值动作，就不需要开 getelementptr
-                lVal.operand = varSymbol.operand;
-            } else {
-                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, newShape)); // 即时是 int array[2][2]; int b = array[0][0]; 在使用getelementptr之后给的那个 tempOperand 仍然是一个ptr，需要使用load取值
-                irManager.addInstruction(new GetElementPtrInst(tempOperand, varSymbol.operand, indexList));
+            lVal.operand = varSymbol.operand;
+
+            if (!varSymbol.valueType.shape().isEmpty()) {
+
+//                if (isFromPrimaryExp && varSymbol.isFuncFParam) {
+//                    // Lval里第一次开Load，这是关于函数参数的，如果它是函数参数，在用之前就需要load
+//                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, lVal.operand.irType.shape));
+//                    irManager.addInstruction(new LoadInst(tempOperand, lVal.operand));
+//                    lVal.operand = tempOperand;
+//                }
+
+                var getElementPtrIndexList = new ArrayList<Integer>();
+                if (!varSymbol.isFuncFParam) { // 如果不是函数参数，就在一开始加一个0（将[2 x [2 x i32]]变成[2 x i32]*），如果是函数形参，那么就不要加这个0，因为其本来就是[2 x i32]*
+                    getElementPtrIndexList.add(0);
+                }
+                getElementPtrIndexList.addAll(indexList);
+                if (indexList.size() < varSymbol.valueType.shape().size()) {
+                    getElementPtrIndexList.add(0);
+                }
+                var newOperandShape = new ArrayList<>(varSymbol.valueType.shape());
+                if (varSymbol.isFuncFParam) { // 如果是参数的shape，那么先把表示[]的-1删去
+                    newOperandShape.remove(0);
+                }
+                for (int i = 1; i < getElementPtrIndexList.size(); i++) {
+                    newOperandShape.remove(0);
+                }
+
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, newOperandShape));
+                irManager.addInstruction(new GetElementPtrInst(tempOperand, lVal.operand, getElementPtrIndexList));
+                lVal.operand = tempOperand;
+
+            }
+            if(isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()){
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, lVal.operand.irType.shape));
+                irManager.addInstruction(new LoadInst(tempOperand, lVal.operand));
                 lVal.operand = tempOperand;
             }
 
@@ -560,12 +590,18 @@ public class Visitor {
             return result;
         } else if (primaryExp.lVal != null) {
             // LVal
-            var result = visit(primaryExp.lVal, false);
+            var result = visit(primaryExp.lVal, false, true);
             if (!irManager.isInGlobal()) {
-                var lValOperand = primaryExp.lVal.operand;
-                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
-                irManager.addInstruction(new LoadInst(tempOperand, lValOperand));
-                primaryExp.operand = tempOperand;
+//                if (!primaryExp.lVal.operand.irType.isPtr) {
+//                    var lValOperand = primaryExp.lVal.operand;
+//                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
+//                    irManager.addInstruction(new LoadInst(tempOperand, lValOperand));
+//                    primaryExp.operand = tempOperand;
+//                } else {
+//                    primaryExp.operand = primaryExp.lVal.operand;
+//                }
+                //将LoadInst放在lVal里面处理，如果是函数参数那么就load
+                primaryExp.operand = primaryExp.lVal.operand;
             }
             return result;
         } else if (primaryExp.number != null) {
@@ -632,12 +668,12 @@ public class Visitor {
             // | [Exp] ';'                    -> Ident { '[' Exp ']' } '+-*/%' || ';' || '(' Exp ')'... || Number || '+'|'-'|'!'
             switch (stmtLValExp.type) {
                 case LVALEXP -> {
-                    visit(stmtLValExp.lVal, true);
+                    visit(stmtLValExp.lVal, true, false);
                     visit(stmtLValExp.exp);
                     irManager.addInstruction(new StoreInst(stmtLValExp.exp.operand, stmtLValExp.lVal.operand));
                 }
                 case GETINT -> {
-                    visit(stmtLValExp.lVal, true);
+                    visit(stmtLValExp.lVal, true, false);
                     var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
                     irManager.addInstruction(new CallGetIntInst(tempOperand));
                     irManager.addInstruction(new StoreInst(tempOperand, stmtLValExp.lVal.operand));
@@ -784,7 +820,7 @@ public class Visitor {
             varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addGlobalVar(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, shape));
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 

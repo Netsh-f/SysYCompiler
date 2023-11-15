@@ -7,6 +7,7 @@ package Compiler.LLVMIR.Global;
 import Compiler.LLVMIR.BasicBlock;
 import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Instructions.AllocaInst;
+import Compiler.LLVMIR.Instructions.LoadInst;
 import Compiler.LLVMIR.Instructions.StoreInst;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
@@ -33,12 +34,27 @@ public class Function extends GlobalDecl {
         this.basicBlockList = new ArrayList<>();
         basicBlockList.add(new BasicBlock(labelManager.allocLabel()));
         var currentBasicBlock = basicBlockList.get(0);
+
         varSymbolList.forEach(varSymbol -> {
             paramOperandList.add(varSymbol.operand);
-            var tempOperand = allocTempOperand(varSymbol.operand.irType);
-            currentBasicBlock.instructionList.add(new AllocaInst(tempOperand));
-            currentBasicBlock.instructionList.add(new StoreInst(varSymbol.operand, tempOperand));
-            varSymbol.operand = tempOperand;
+
+            // 因为源语言Sysy不存在“指针”这一概念，也就是说作为函数参数的这个变量，不是指针，它不会改变(我永远只会取它，不会写它，它不会出现'='左边)，所以不再需要开一个 alloc + store 将其放在一个寄存器里面
+            if (varSymbol.valueType.shape().isEmpty()) {
+                // 非数组，开alloca store
+                var tempOperand = allocTempOperand(new IRType(IRType.IRValueType.I32, true, varSymbol.operand.irType.shape));
+                currentBasicBlock.instructionList.add(new AllocaInst(tempOperand));
+                currentBasicBlock.instructionList.add(new StoreInst(varSymbol.operand, tempOperand));
+                varSymbol.operand = tempOperand;
+            }
+
+//            if (!varSymbol.valueType.shape().isEmpty()) {
+////                var newShape = new ArrayList<Integer>(varSymbol.valueType.shape());
+////                newShape.remove(0);
+////                var newTempOperand = allocTempOperand(new IRType(IRType.IRValueType.I32, false, newShape));
+//                var newTempOperand = allocTempOperand(varSymbol.operand.irType);
+//                currentBasicBlock.instructionList.add(new LoadInst(newTempOperand, tempOperand));
+//                tempOperand = newTempOperand;
+//            }
         });
         this.returnIRType = returnIRType;
         this.ident = "@" + ident;

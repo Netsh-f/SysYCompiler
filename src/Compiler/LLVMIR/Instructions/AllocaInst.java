@@ -9,11 +9,12 @@ import Compiler.LLVMIR.Operand.Operand;
 public class AllocaInst extends Instruction {
     public Operand resultOperand;
 
+
     public AllocaInst(Operand resultOperand) {
         this.resultOperand = resultOperand;
     }
 
     public String toString() {
-        return resultOperand + " = alloca " + this.resultOperand.irType + "\n";
+        return resultOperand + " = alloca " + this.resultOperand.irType.toStringWithoutPtr() + "\n";
     }
 }

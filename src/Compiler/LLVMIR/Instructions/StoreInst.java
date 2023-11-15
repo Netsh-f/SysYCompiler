@@ -18,6 +18,6 @@ public class StoreInst extends Instruction {
 
     @Override
     public String toString() {
-        return "store " + value.irType + " " + value + ", " + pointer.irType + "* " + pointer + "\n";
+        return "store " + value.irType + " " + value + ", " + pointer.irType + " " + pointer + "\n";
     }
 }

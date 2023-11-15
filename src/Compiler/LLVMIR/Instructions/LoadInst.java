@@ -17,6 +17,6 @@ public class LoadInst extends Instruction {
 
     @Override
     public String toString() {
-        return resultOperand + " = load " + pointerOperand.irType + ", " + pointerOperand.irType + "* " + pointerOperand + "\n";
+        return resultOperand + " = load " + pointerOperand.irType.toStringWithoutPtr() + ", " + pointerOperand.irType + " " + pointerOperand + "\n";
     }
 }

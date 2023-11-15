@@ -68,7 +68,8 @@ public class IRType {
             case INT -> IRValueType.I32;
             case VOID -> IRValueType.VOID;
         };
-        this.isPtr = !valueType.shape().isEmpty();
+        this.isPtr = !valueType.shape().isEmpty(); // 如果形参没有中括号，那么就不是ptr
+        System.out.println("IRType:"+valueType+"isPtr:"+this.isPtr);
         var newShape = new ArrayList<Integer>(valueType.shape());
         if (!valueType.shape().isEmpty()) {
             newShape.remove(0);

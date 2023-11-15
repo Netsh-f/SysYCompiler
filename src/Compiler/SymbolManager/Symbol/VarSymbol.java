@@ -12,6 +12,7 @@ public class VarSymbol {
     public ValueType valueType;
     public boolean isConst;
     public List<Integer> values;
+    public boolean isFuncFParam = false;
 
     public Operand operand;
 
