@@ -9,11 +9,6 @@ import Compiler.LLVMIR.IRType;
 public class TempOperand extends Operand {
     public int label;
 
-    public TempOperand(int label, IRType.IRValueType type) {
-        this.label = label;
-        this.irType = new IRType(type);
-    }
-
     public TempOperand(int label, IRType irType) {
         this.label = label;
         this.irType = irType;

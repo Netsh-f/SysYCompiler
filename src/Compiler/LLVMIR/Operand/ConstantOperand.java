@@ -10,7 +10,7 @@ public class ConstantOperand extends Operand {
     public int intNumber;
 
     public ConstantOperand(int intNumber) {
-        this.irType = new IRType(IRType.IRValueType.I32);
+        this.irType = new IRType(IRType.IRValueType.I32, false);
         this.intNumber = intNumber;
     }
 

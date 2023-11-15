@@ -31,11 +31,6 @@ public class Function extends GlobalDecl {
         return new TempOperand(labelManager.allocLabel(), irType);
     }
 
-
-    public TempOperand allocTempOperand(IRType.IRValueType type) {
-        return new TempOperand(labelManager.allocLabel(), type);
-    }
-
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();

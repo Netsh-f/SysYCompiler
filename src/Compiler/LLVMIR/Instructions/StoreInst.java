@@ -7,7 +7,7 @@ package Compiler.LLVMIR.Instructions;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.SymbolManager.Symbol.ValueType;
 
-public class StoreInst extends Instruction{
+public class StoreInst extends Instruction {
     public Operand value;
     public Operand pointer;
 
@@ -18,6 +18,6 @@ public class StoreInst extends Instruction{
 
     @Override
     public String toString() {
-        return "store " + value.irType + " " + value + ", " + pointer.irType + "* " + pointer + "\n";
+        return "store " + value.irType + " " + value + ", " + pointer.irType + " " + pointer + "\n";
     }
 }

@@ -23,24 +23,33 @@ public class IRType {
     }
 
     public IRValueType irValueType;
+    public boolean isPtr;
     public List<Integer> shape;
 
-    public IRType(IRValueType irValueType) {
+
+    public IRType(IRValueType irValueType, boolean isPtr) {
         this.irValueType = irValueType;
         this.shape = new ArrayList<>();
+        this.isPtr = isPtr;
     }
 
-    public IRType(IRValueType irValueType, List<Integer> shape) {
+    public IRType(IRValueType irValueType, boolean isPtr, List<Integer> shape) {
         this.irValueType = irValueType;
         this.shape = shape;
+        this.isPtr = isPtr;
     }
 
     public String toString() {
-        if (shape.isEmpty()) {
-            return this.irValueType.toString();
-        } else {
-            return typeToString(this.irValueType, this.shape, 0);
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(typeToString(this.irValueType, this.shape, 0));
+        if (isPtr) {
+            stringBuilder.append("*");
         }
+        return stringBuilder.toString();
+    }
+
+    public String toStringWithoutPtr() {
+        return typeToString(this.irValueType, this.shape, 0);
     }
 
     private String typeToString(IRType.IRValueType type, List<Integer> shape, int floor) {

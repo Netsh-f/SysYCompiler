@@ -83,7 +83,7 @@ public class Visitor {
             addExp.operand = addExp.mulExpList.get(0).operand;
             for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
                 var mulExp = addExp.mulExpList.get(1 + i);
-                var tempOperand = irManager.allocTempOperand(IRType.IRValueType.I32);
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
                 switch (addExp.opLexTypeList.get(i)) {
                     case PLUS ->
                             irManager.addInstruction(new AddInst(tempOperand, IRType.IRValueType.I32, addExp.operand, mulExp.operand));
@@ -189,10 +189,10 @@ public class Visitor {
 
         if (irManager.isInGlobal()) {
             // 如果在全局位置
-            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, shape));
+            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, !shape.isEmpty(), shape));
             irManager.addGlobalConst(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, shape));
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, !shape.isEmpty(), shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 
@@ -219,7 +219,7 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = irManager.allocTempOperand(IRType.IRValueType.I32);
+                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true));
                     var indexes = new ArrayList<Integer>();
                     int size = 1;
                     for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
@@ -313,7 +313,7 @@ public class Visitor {
 
         visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
         if (returnValueType == ValueTypeEnum.VOID) { // 如果函数是void，无论是否有"return;"，均在此添加指令
-            irManager.addInstruction(new RetInst(new Operand(new IRType(IRType.IRValueType.VOID))));
+            irManager.addInstruction(new RetInst(new Operand(new IRType(IRType.IRValueType.VOID, false))));
         }
         curFuncReturnType = ValueTypeEnum.VOID;
 
@@ -390,7 +390,7 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = irManager.allocTempOperand(IRType.IRValueType.I32);
+                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true));
                     var indexes = new ArrayList<Integer>();
                     int size = 1;
                     for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
@@ -511,7 +511,7 @@ public class Visitor {
             mulExp.operand = mulExp.unaryExpList.get(0).operand;
             for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
                 var unaryExp = mulExp.unaryExpList.get(1 + i);
-                var tempOperand = irManager.allocTempOperand(IRType.IRValueType.I32);
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
                 switch (mulExp.opLexTypeList.get(i)) {
                     case MULT ->
                             irManager.addInstruction(new MulInst(tempOperand, IRType.IRValueType.I32, mulExp.operand, unaryExp.operand));
@@ -656,7 +656,7 @@ public class Visitor {
                 case PLUS -> unaryExp.operand = unaryExp.unaryExp.operand;
                 case MINU -> {
                     result.value = -result.value;
-                    unaryExp.operand = irManager.allocTempOperand(IRType.IRValueType.I32);
+                    unaryExp.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
                     if (!result.isConst) { // 常量优化
                         irManager.addInstruction(new SubInst(unaryExp.operand, IRType.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
                     }
@@ -742,10 +742,10 @@ public class Visitor {
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
         if (irManager.isInGlobal()) {
             // 如果在全局定义的位置
+            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, !shape.isEmpty(), shape));
             irManager.addGlobalVar(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(IRType.IRValueType.I32);
-            varSymbol.operand.irType = new IRType(IRType.IRValueType.I32, shape);
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, !shape.isEmpty(), shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 

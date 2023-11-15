@@ -25,9 +25,9 @@ public class IRManager {
     }
 
 
-    public TempOperand allocTempOperand(IRType.IRValueType type) {
-        return currentFunction.allocTempOperand(type);
-    }
+//    public TempOperand allocTempOperand(IRType.IRValueType type) {
+//        return currentFunction.allocTempOperand(type);
+//    }
 
     public void addGlobalVar(String ident, List<Integer> shape, List<Integer> values) {
         this.module.globalDeclList.add(new GlobalConst(ident, shape, IRType.IRValueType.I32, values, false));

@@ -15,6 +15,6 @@ public class AllocaInst extends Instruction {
     }
 
     public String toString() {
-        return resultOperand + " = alloca " + this.resultOperand.irType + "\n";
+        return resultOperand + " = alloca " + this.resultOperand.irType.toStringWithoutPtr() + "\n";
     }
 }
