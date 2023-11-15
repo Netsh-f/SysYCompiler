@@ -12,7 +12,6 @@ import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Operand.ConstantOperand;
 import Compiler.LLVMIR.Operand.GlobalOperand;
 import Compiler.LLVMIR.Operand.Operand;
-import Compiler.LLVMIR.Operand.TempOperand;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
 import Compiler.Parser.Nodes.Number;
@@ -64,7 +63,7 @@ public class Visitor {
             value = result.value;
         }
         boolean isConst = result.isConst;
-        ;
+
         for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
             result = visit(addExp.mulExpList.get(1 + i));
             if (isConst && result.isConst) {
@@ -188,10 +187,10 @@ public class Visitor {
 
         if (irManager.isInGlobal()) {
             // 如果在全局位置
-            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, true, shape));
+            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addGlobalConst(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, shape));
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 
@@ -204,6 +203,20 @@ public class Visitor {
             return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
         }
         return visit(constExp.addExp());
+    }
+
+    private Operand initValForConstAndVar(List<Integer> values, VarSymbol varSymbol) {
+        var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true));
+        var indexes = new ArrayList<Integer>();
+        int size = 1;
+        for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
+            var len = varSymbol.valueType.shape().get(i);
+            indexes.add((values.size() - 1) / size % len);
+            size *= len;
+        }
+        Collections.reverse(indexes);
+        irManager.addInstruction(new GetElementPtrInst(tempOperand, varSymbol.operand, indexes));
+        return tempOperand;
     }
 
     private void visit(ConstInitVal constInitVal, List<Integer> shape, List<Integer> values, VarSymbol varSymbol) {
@@ -219,16 +232,7 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true));
-                    var indexes = new ArrayList<Integer>();
-                    int size = 1;
-                    for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
-                        var len = varSymbol.valueType.shape().get(i);
-                        indexes.add((values.size() - 1) / size % len);
-                        size *= len;
-                    }
-                    Collections.reverse(indexes);
-                    irManager.addInstruction(new GetElementPtrInst(tempOperand, varSymbol.operand, indexes));
+                    var tempOperand = initValForConstAndVar(values, varSymbol);
                     irManager.addInstruction(new StoreInst(constInitVal.constExp().addExp().operand, tempOperand));
                 } else {
                     // 不是数组
@@ -305,10 +309,11 @@ public class Visitor {
             visit(funcDef.funcFParams(), varSymbolList);
         }
 
-        symbolManager.addFuncSymbol(identToken.content(), new FuncSymbol(returnValueType, varSymbolList));
+        var funcSymbol = new FuncSymbol(returnValueType, varSymbolList);
+        symbolManager.addFuncSymbol(identToken.content(), funcSymbol);
         curFuncReturnType = returnValueType; // 记录当前函数的返回类型，为检查return语句错误做准备
 
-        irManager.addFunctionDecl(curFuncReturnType, identToken.content());
+        irManager.addFunctionDecl(curFuncReturnType, identToken.content(), varSymbolList, funcSymbol);
 
         visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
         if (returnValueType == ValueTypeEnum.VOID) { // 如果函数是void，无论是否有"return;"，均在此添加指令
@@ -355,13 +360,16 @@ public class Visitor {
         funcFParams.funcFParamList().forEach(funcFParam -> visit(funcFParam, varSymbolList));
     }
 
-    private List<VisitResult> visit(FuncRParams funcRParams) {
+    private List<VisitResult> visit(FuncRParams funcRParams, List<Operand> operandList) {
         //  FuncRParams → Exp { ',' Exp }
         var visitResultList = new ArrayList<VisitResult>();
         if (funcRParams == null) {
             return visitResultList;
         }
-        funcRParams.expList().forEach(exp -> visitResultList.add(visit(exp)));
+        funcRParams.expList().forEach(exp -> {
+            visitResultList.add(visit(exp));
+            operandList.add(exp.operand);
+        });
         return visitResultList;
     }
 
@@ -389,16 +397,7 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true));
-                    var indexes = new ArrayList<Integer>();
-                    int size = 1;
-                    for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
-                        var len = varSymbol.valueType.shape().get(i);
-                        indexes.add((values.size() - 1) / size % len);
-                        size *= len;
-                    }
-                    Collections.reverse(indexes);
-                    irManager.addInstruction(new GetElementPtrInst(tempOperand, varSymbol.operand, indexes));
+                    var tempOperand = initValForConstAndVar(values, varSymbol);
                     irManager.addInstruction(new StoreInst(initVal.exp().operand, tempOperand));
                 } else {
                     //不是数组
@@ -464,7 +463,7 @@ public class Visitor {
                 // 如果没有取值动作，就不需要开 getelementptr
                 lVal.operand = varSymbol.operand;
             } else {
-                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, newShape)); // 即时是 int array[2][2]; int b = arrar[0][0]; 在使用getelementptr之后给的那个tempoperand仍然是一个ptr，需要使用load取值
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, newShape)); // 即时是 int array[2][2]; int b = array[0][0]; 在使用getelementptr之后给的那个 tempOperand 仍然是一个ptr，需要使用load取值
                 irManager.addInstruction(new GetElementPtrInst(tempOperand, varSymbol.operand, indexList));
                 lVal.operand = tempOperand;
             }
@@ -482,7 +481,7 @@ public class Visitor {
         curFuncReturnType = ValueTypeEnum.INT;
         symbolManager.createSymbolTable();
 
-        irManager.addFunctionDecl(curFuncReturnType, "main");
+        irManager.addFunctionDecl(curFuncReturnType, "main", new ArrayList<>(), new FuncSymbol(ValueTypeEnum.INT, new ArrayList<>())); // main的funcSymbol没有存下来，这里写是为了和一般的function保持一致
 
         visit(mainFuncDef.block(), true);
         symbolManager.traceBack();
@@ -502,7 +501,7 @@ public class Visitor {
             value = result.value;
         }
         boolean isConst = result.isConst;
-        ;
+
         for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
             result = visit(mulExp.unaryExpList.get(1 + i));
             if (isConst && result.isConst) {
@@ -563,15 +562,10 @@ public class Visitor {
             // LVal
             var result = visit(primaryExp.lVal, false);
             if (!irManager.isInGlobal()) {
-                var lValOpernad = primaryExp.lVal.operand;
-                if (lValOpernad.irType.isPtr) {
-                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false)); // 必不可能是ptr，如果是那么是语法有问题，就像 int array[2]; int b = array;
-                    irManager.addInstruction(new LoadInst(tempOperand, lValOpernad));
-                    primaryExp.operand = tempOperand;
-                } else {
-                    // 如果不是地址就不需要 load 命令
-                    primaryExp.operand = lValOpernad;
-                }
+                var lValOperand = primaryExp.lVal.operand;
+                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
+                irManager.addInstruction(new LoadInst(tempOperand, lValOperand));
+                primaryExp.operand = tempOperand;
             }
             return result;
         } else if (primaryExp.number != null) {
@@ -643,8 +637,10 @@ public class Visitor {
                     irManager.addInstruction(new StoreInst(stmtLValExp.exp.operand, stmtLValExp.lVal.operand));
                 }
                 case GETINT -> {
-                    // TODO getint
                     visit(stmtLValExp.lVal, true);
+                    var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
+                    irManager.addInstruction(new CallGetIntInst(tempOperand));
+                    irManager.addInstruction(new StoreInst(tempOperand, stmtLValExp.lVal.operand));
                 }
                 case EXP -> {
                     if (stmtLValExp.exp != null) {
@@ -703,6 +699,7 @@ public class Visitor {
             return result;
         } else if (unaryExp.ident != null) {
             // Ident '(' [FuncRParams] ')'
+            // 唯一函数调用
             var identToken = unaryExp.ident.token();
             var funcSymbol = symbolManager.findFuncSymbol(identToken.content());
             if (!symbolManager.isFuncSymbolDefined(identToken.content())) {
@@ -710,15 +707,18 @@ public class Visitor {
                 funcSymbol = new FuncSymbol(ValueTypeEnum.VOID, new ArrayList<>());
             }
 
+            var funcRParamOperandList = new ArrayList<Operand>();
+
             if (unaryExp.funcRParams != null) {
-                var resultList = visit(unaryExp.funcRParams);
-                if (funcSymbol.paramVarSymbolList().size() != resultList.size()) {
+                // 有实参
+                var resultList = visit(unaryExp.funcRParams, funcRParamOperandList);
+                if (funcSymbol.paramVarSymbolList.size() != resultList.size()) {
                     // 参数数量错误
                     OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "too few or many arguments to function '" + identToken.content() + "'");
                 } else {
                     // 参数数量正确
                     for (int i = 0; i < resultList.size(); i++) {
-                        var funcFParamValueType = funcSymbol.paramVarSymbolList().get(i).valueType;
+                        var funcFParamValueType = funcSymbol.paramVarSymbolList.get(i).valueType;
                         var funcRParamValueType = resultList.get(i).valueType;
                         if (!funcFParamValueType.isFParamToRParamValid(funcRParamValueType)) { // ValueType.equals()方法重写了，考虑了[][3]的情况
                             // 参数类型错误
@@ -728,7 +728,16 @@ public class Visitor {
                     }
                 }
             }
-            return new VisitResult(new ValueType(funcSymbol.valueTypeEnum(), new ArrayList<>()), false, 0);
+
+            if (funcSymbol.valueTypeEnum == ValueTypeEnum.VOID) { // 如果是void就不开寄存器储存返回值了
+                irManager.addInstruction(new CallInst(funcSymbol.function, funcRParamOperandList));
+            } else {
+                var tempOperand = irManager.allocTempOperand(new IRType(new ValueType(funcSymbol.valueTypeEnum, new ArrayList<>())));
+                irManager.addInstruction(new CallInst(tempOperand, funcSymbol.function, funcRParamOperandList));
+                unaryExp.operand = tempOperand;
+            }
+
+            return new VisitResult(new ValueType(funcSymbol.valueTypeEnum, new ArrayList<>()), false, 0);
         }
         return new VisitResult(new ValueType(ValueTypeEnum.VOID, new ArrayList<>()), false, 0);
     }
@@ -772,17 +781,17 @@ public class Visitor {
 
         if (irManager.isInGlobal()) {
             // 如果在全局定义的位置
-            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, true, shape));
+            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addGlobalVar(identToken.content(), shape, values);
         } else {
-            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, true, shape));
+            varSymbol.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false, shape));
             irManager.addInstruction(new AllocaInst(varSymbol.operand));
         }
 
         if (varDef.initVal() != null) { // 如果有初始值，特别是全局变量中，其一定为constInitVal
             visit(varDef.initVal(), shape, values, varSymbol);
         }
-        // 过完 initval 之后再添加符号表，先用再定义，如以下情况： int c = 3; int main(){ int c = c + 1; }
+        // 过完 initVal 之后再添加符号表，先用再定义，如以下情况： int c = 3; int main(){ int c = c + 1; }
         symbolManager.addVarSymbol(identToken.content(), varSymbol);
     }
 }

@@ -7,14 +7,14 @@ package Compiler.LLVMIR.Operand;
 import Compiler.LLVMIR.IRType;
 
 public class TempOperand extends Operand {
-    public int label;
+    public String label;
 
     public TempOperand(int label, IRType irType) {
-        this.label = label;
+        this.label = "%" + label;
         this.irType = irType;
     }
 
     public String toString() {
-        return "%" + this.label;
+        return this.label;
     }
 }

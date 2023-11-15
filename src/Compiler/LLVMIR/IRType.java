@@ -4,6 +4,9 @@
 */
 package Compiler.LLVMIR;
 
+import Compiler.SymbolManager.Symbol.ValueType;
+import Compiler.SymbolManager.Symbol.ValueTypeEnum;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,5 +61,18 @@ public class IRType {
         } else {
             return "[" + shape.get(floor) + " x " + typeToString(type, shape, floor + 1) + "]";
         }
+    }
+
+    public IRType(ValueType valueType) {
+        this.irValueType = switch (valueType.type()) {
+            case INT -> IRValueType.I32;
+            case VOID -> IRValueType.VOID;
+        };
+        this.isPtr = !valueType.shape().isEmpty();
+        var newShape = new ArrayList<Integer>(valueType.shape());
+        if (!valueType.shape().isEmpty()) {
+            newShape.remove(0);
+        }
+        this.shape = newShape;
     }
 }

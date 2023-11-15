@@ -4,10 +4,17 @@
 */
 package Compiler.SymbolManager.Symbol;
 
-import Compiler.SymbolManager.Symbol.ValueTypeEnum;
-import Compiler.SymbolManager.Symbol.VarSymbol;
+import Compiler.LLVMIR.Global.Function;
 
 import java.util.List;
 
-public record FuncSymbol(ValueTypeEnum valueTypeEnum, List<VarSymbol> paramVarSymbolList) {
+public class FuncSymbol {
+    public ValueTypeEnum valueTypeEnum;
+    public List<VarSymbol> paramVarSymbolList;
+    public Function function;
+
+    public FuncSymbol(ValueTypeEnum valueTypeEnum, List<VarSymbol> paramVarSymbolList) {
+        this.valueTypeEnum = valueTypeEnum;
+        this.paramVarSymbolList = paramVarSymbolList;
+    }
 }

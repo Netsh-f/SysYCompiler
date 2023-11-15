@@ -4,7 +4,9 @@ import Compiler.LLVMIR.Global.Function;
 import Compiler.LLVMIR.Global.GlobalConst;
 import Compiler.LLVMIR.Instructions.Instruction;
 import Compiler.LLVMIR.Operand.TempOperand;
+import Compiler.SymbolManager.Symbol.FuncSymbol;
 import Compiler.SymbolManager.Symbol.ValueTypeEnum;
+import Compiler.SymbolManager.Symbol.VarSymbol;
 
 import java.util.List;
 
@@ -48,14 +50,15 @@ public class IRManager {
         this.currentBasicBlock.instructionList.add(instruction);
     }
 
-    public void addFunctionDecl(ValueTypeEnum type, String ident) {
+    public void addFunctionDecl(ValueTypeEnum type, String ident, List<VarSymbol> varSymbolList, FuncSymbol funcSymbol) {
         var functionType = switch (type) {
             case VOID -> IRType.IRValueType.VOID;
             case INT -> IRType.IRValueType.I32;
         };
-        this.currentFunction = new Function(functionType, ident);
+        this.currentFunction = new Function(new IRType(functionType, false), ident, varSymbolList);
         this.currentBasicBlock = this.currentFunction.basicBlockList.get(0);
         module.globalDeclList.add(this.currentFunction);
+        funcSymbol.function = this.currentFunction;
     }
 
     public IRModule getModule() {
