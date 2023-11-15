@@ -23,6 +23,7 @@ public class GetElementPtrInst extends Instruction {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(this.resultOperand).append(" = getelementptr ").append(addrOperand.irType.toStringWithoutPtr())
                 .append(", ").append(addrOperand.irType).append(" ").append(addrOperand);
+        stringBuilder.append(", ").append(addrOperand.irType.irValueType).append(" 0");
         indexes.forEach(index -> {
             stringBuilder.append(", ").append(addrOperand.irType.irValueType).append(" ").append(index);
         });

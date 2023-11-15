@@ -20,7 +20,7 @@ public class BasicBlock extends Value {
 
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        instructionList.forEach(instruction -> stringBuilder.append("  ").append(instruction));
+        instructionList.forEach(instruction -> stringBuilder.append("    ").append(instruction));
         return stringBuilder.toString();
     }
 }

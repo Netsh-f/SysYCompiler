@@ -20,7 +20,11 @@ public class IRManager {
     public boolean isInGlobal() {
         return currentFunction == null;
     }
+
     public TempOperand allocTempOperand(IRType irType) {
+        if (currentFunction == null) {
+            return null;
+        }
         return currentFunction.allocTempOperand(irType);
     }
 
@@ -38,6 +42,9 @@ public class IRManager {
     }
 
     public void addInstruction(Instruction instruction) {
+        if (currentBasicBlock == null) {
+            return;
+        }
         this.currentBasicBlock.instructionList.add(instruction);
     }
 

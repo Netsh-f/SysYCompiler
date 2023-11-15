@@ -34,7 +34,7 @@ public class Function extends GlobalDecl {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("define dso_local ").append(this.returnType).append(" @").
+        stringBuilder.append("\ndefine dso_local ").append(this.returnType).append(" @").
                 append(this.ident).append("() #0 {\n");
         // TODO: 参数输出
         basicBlockList.forEach(stringBuilder::append);
