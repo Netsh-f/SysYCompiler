@@ -15,6 +15,7 @@ import Compiler.SymbolManager.Symbol.VarSymbol;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -95,8 +96,11 @@ public class IRManager {
     }
 
     private GlobalOperand addGlobalStr(String string) {
-        var operand = new GlobalOperand("str" + strLabelManager.allocLabel(), new IRType(IRType.IRValueType.I8, true, new ArrayList<>(string.length())));
-        module.globalDeclList.add(new GlobalStr(operand, string));
+        var newString = string.replaceAll("\\\\n", "\\\\0A");
+        var shape = new ArrayList<Integer>();
+        shape.add(2 * string.length() - newString.length());
+        var operand = new GlobalOperand("str" + strLabelManager.allocLabel(), new IRType(IRType.IRValueType.I8, true, shape));
+        module.globalDeclList.add(0, new GlobalStr(operand, newString));
         return operand;
     }
 
@@ -106,14 +110,16 @@ public class IRManager {
         for (int i = 0; i < indexList.size(); i++) {
             if (beginIndex < indexList.get(i)) {
                 var operand = addGlobalStr(formatString.substring(beginIndex, indexList.get(i))); // 到%的前一个
-                addInstruction(new CallPutStrInst(operand));
+                var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, Arrays.asList(0, 0));
+                addInstruction(new CallPutStrInst(tempOperand));
             }
             addInstruction(new CallPutIntInst(expOperandList.get(i)));
             beginIndex = indexList.get(i) + 2; // beginIndex = %d的后一个
         }
         if (beginIndex < formatString.length()) { // 如果还有剩的
             var operand = addGlobalStr(formatString.substring(beginIndex));
-            addInstruction(new CallPutStrInst(operand));
+            var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, Arrays.asList(0, 0));
+            addInstruction(new CallPutStrInst(tempOperand));
         }
     }
 
