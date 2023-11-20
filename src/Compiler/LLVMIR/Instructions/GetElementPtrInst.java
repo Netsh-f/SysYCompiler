@@ -10,21 +10,21 @@ import java.util.List;
 
 public class GetElementPtrInst extends Instruction {
     public Operand resultOperand;
-    public Operand addrOperand;
+    public Operand ptrOperand;
     public List<Integer> indexes;
 
-    public GetElementPtrInst(Operand resultOperand, Operand addrOperand, List<Integer> indexes) {
+    public GetElementPtrInst(Operand resultOperand, Operand ptrOperand, List<Integer> indexes) {
         this.resultOperand = resultOperand;
-        this.addrOperand = addrOperand;
+        this.ptrOperand = ptrOperand;
         this.indexes = indexes;
     }
 
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(this.resultOperand).append(" = getelementptr ").append(addrOperand.irType.toStringWithoutPtr())
-                .append(", ").append(addrOperand.irType.toStringWithoutPtr()).append("* ").append(addrOperand);
+        stringBuilder.append(this.resultOperand).append(" = getelementptr ").append(ptrOperand.irType.toStringWithoutPtr())
+                .append(", ").append(ptrOperand.irType.toStringWithoutPtr()).append("* ").append(ptrOperand);
         indexes.forEach(index -> {
-            stringBuilder.append(", ").append(addrOperand.irType.irValueType).append(" ").append(index);
+            stringBuilder.append(", ").append(ptrOperand.irType.irValueType).append(" ").append(index);
         });
         stringBuilder.append("\n");
         return stringBuilder.toString();
