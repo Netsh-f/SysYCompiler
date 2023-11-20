@@ -703,6 +703,9 @@ public class Parser {
         }
         if (getLexType() == LexType.STRCON) {
             formatStringContent = getString();
+            if (!formatStringContent.isEmpty()) { // 原始的string是带有两个双引号的，长度至少为2
+                formatStringContent = formatStringContent.substring(1, formatStringContent.length() - 1);
+            }
             for (int i = 0; i < formatStringContent.length() - 1; i++) {
                 if (formatStringContent.charAt(i) == '%' && formatStringContent.charAt(i + 1) == 'd') {
                     indexList.add(i);

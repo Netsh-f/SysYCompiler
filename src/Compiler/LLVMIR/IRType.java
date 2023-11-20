@@ -5,7 +5,6 @@
 package Compiler.LLVMIR;
 
 import Compiler.SymbolManager.Symbol.ValueType;
-import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +13,15 @@ public class IRType {
     public enum IRValueType {
         I32,
         VOID,
-        I1;
+        I1,
+        I8;
 
         public String toString() {
             return switch (this) {
                 case VOID -> "void";
                 case I32 -> "i32";
                 case I1 -> "i1";
+                case I8 -> "i8";
             };
         }
     }
@@ -69,7 +70,6 @@ public class IRType {
             case VOID -> IRValueType.VOID;
         };
         this.isPtr = !valueType.shape().isEmpty(); // 如果形参没有中括号，那么就不是ptr
-        System.out.println("IRType:"+valueType+"isPtr:"+this.isPtr);
         var newShape = new ArrayList<Integer>(valueType.shape());
         if (!valueType.shape().isEmpty()) {
             newShape.remove(0);

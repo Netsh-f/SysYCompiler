@@ -2,6 +2,8 @@ package Compiler.LLVMIR;
 
 import Compiler.LLVMIR.Global.Function;
 import Compiler.LLVMIR.Global.GlobalConst;
+import Compiler.LLVMIR.Global.GlobalStr;
+import Compiler.LLVMIR.Global.LabelManager;
 import Compiler.LLVMIR.Instructions.*;
 import Compiler.LLVMIR.Instructions.Quadruple.AddInst;
 import Compiler.LLVMIR.Operand.GlobalOperand;
@@ -11,6 +13,8 @@ import Compiler.SymbolManager.Symbol.FuncSymbol;
 import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 import Compiler.SymbolManager.Symbol.VarSymbol;
 
+import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,9 +22,11 @@ public class IRManager {
     private final IRModule module;
     private Function currentFunction;
     private BasicBlock currentBasicBlock;
+    private LabelManager strLabelManager;
 
     public IRManager() {
         this.module = new IRModule();
+        this.strLabelManager = new LabelManager();
     }
 
     public boolean isInGlobal() {
@@ -34,18 +40,16 @@ public class IRManager {
         return currentFunction.allocTempOperand(irType);
     }
 
-
-//    public TempOperand allocTempOperand(IRType.IRValueType type) {
-//        return currentFunction.allocTempOperand(type);
-//    }
-
     public Operand addGlobalVar(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalConst(ident, shape, IRType.IRValueType.I32, values, false));
-        return new GlobalOperand(ident, new IRType(IRType.IRValueType.I32, false, shape));
+        var operand = new GlobalOperand(ident, new IRType(IRType.IRValueType.I32, true, shape));
+        this.module.globalDeclList.add(new GlobalConst(operand, values, false));
+        return operand;
     }
 
-    public void addGlobalConst(String ident, List<Integer> shape, List<Integer> values) {
-        this.module.globalDeclList.add(new GlobalConst(ident, shape, IRType.IRValueType.I32, values, true));
+    public Operand addGlobalConst(String ident, List<Integer> shape, List<Integer> values) {
+        var operand = new GlobalOperand(ident, new IRType(IRType.IRValueType.I32, true, shape));
+        this.module.globalDeclList.add(new GlobalConst(operand, values, true));
+        return operand;
     }
 
     public void addInstruction(Instruction instruction) {
@@ -88,6 +92,29 @@ public class IRManager {
 
     public void addStoreInst(Operand valueOperand, Operand pointerOperand) {
         addInstruction(new StoreInst(valueOperand, pointerOperand));
+    }
+
+    private GlobalOperand addGlobalStr(String string) {
+        var operand = new GlobalOperand("str" + strLabelManager.allocLabel(), new IRType(IRType.IRValueType.I8, true, new ArrayList<>(string.length())));
+        module.globalDeclList.add(new GlobalStr(operand, string));
+        return operand;
+    }
+
+    public void addCallPutInst(String formatString, List<Integer> indexList, List<Operand> expOperandList) {
+        // indexList: the index of '%' for "%d"
+        int beginIndex = 0;
+        for (int i = 0; i < indexList.size(); i++) {
+            if (beginIndex < indexList.get(i)) {
+                var operand = addGlobalStr(formatString.substring(beginIndex, indexList.get(i))); // 到%的前一个
+                addInstruction(new CallPutStrInst(operand));
+            }
+            addInstruction(new CallPutIntInst(expOperandList.get(i)));
+            beginIndex = indexList.get(i) + 2; // beginIndex = %d的后一个
+        }
+        if (beginIndex < formatString.length()) { // 如果还有剩的
+            var operand = addGlobalStr(formatString.substring(beginIndex));
+            addInstruction(new CallPutStrInst(operand));
+        }
     }
 
     public void addFunctionDecl(ValueTypeEnum type, String ident, List<VarSymbol> varSymbolList, FuncSymbol funcSymbol) {

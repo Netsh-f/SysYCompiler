@@ -16,8 +16,8 @@ public class StmtPrint extends Stmt {
     public FormatString formatString;
     public List<Exp> expList;
 
-    public StmtPrint(Token ptintfToken, FormatString formatString, List<Exp> expList) {
-        this.ptintfToken = ptintfToken;
+    public StmtPrint(Token printfToken, FormatString formatString, List<Exp> expList) {
+        this.ptintfToken = printfToken;
         this.formatString = formatString;
         this.expList = expList;
     }

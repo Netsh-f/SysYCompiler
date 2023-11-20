@@ -10,7 +10,6 @@ import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Instructions.*;
 import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Operand.ConstantOperand;
-import Compiler.LLVMIR.Operand.GlobalOperand;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.Lexer.LexType;
 import Compiler.Parser.Nodes.*;
@@ -187,8 +186,7 @@ public class Visitor {
 
         if (irManager.isInGlobal()) {
             // 如果在全局位置
-            varSymbol.operand = new GlobalOperand(identToken.content(), new IRType(IRType.IRValueType.I32, false, shape));
-            irManager.addGlobalConst(identToken.content(), shape, values);
+            varSymbol.operand = irManager.addGlobalConst(identToken.content(), shape, values);
         } else {
             varSymbol.operand = irManager.addAllocaInst(IRType.IRValueType.I32, shape);
         }
@@ -668,7 +666,12 @@ public class Visitor {
             }
         } else if (stmt instanceof StmtPrint stmtPrint) {
             //'printf''('FormatString{','Exp}')'';'
-            stmtPrint.expList.forEach(this::visit);
+            var expOperandList = new ArrayList<Operand>();
+            stmtPrint.expList.forEach(exp -> {
+                visit(exp);
+                expOperandList.add(exp.operand);
+            });
+            irManager.addCallPutInst(stmtPrint.formatString.content(), stmtPrint.formatString.indexList(), expOperandList);
         } else if (stmt instanceof StmtReturn stmtReturn) {
             //'return' [Exp] ';'
             if (stmtReturn.exp != null) {
