@@ -4,6 +4,7 @@
 */
 package Compiler.Visitor;
 
+import Compiler.LLVMIR.BasicBlock;
 import Compiler.LLVMIR.IRManager;
 import Compiler.LLVMIR.IRModule;
 import Compiler.LLVMIR.IRType;
@@ -80,14 +81,11 @@ public class Visitor {
         if (!isConst) { // 常量优化
             for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
                 var mulExp = addExp.mulExpList.get(1 + i);
-                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
-                switch (addExp.opLexTypeList.get(i)) {
-                    case PLUS ->
-                            irManager.addInstruction(new AddInst(tempOperand, IRType.IRValueType.I32, addExp.operand, mulExp.operand));
-                    case MINU ->
-                            irManager.addInstruction(new SubInst(tempOperand, IRType.IRValueType.I32, addExp.operand, mulExp.operand));
-                }
-                addExp.operand = tempOperand;
+                addExp.operand = switch (addExp.opLexTypeList.get(i)) {
+                    case PLUS -> irManager.addAddInst(addExp.operand, mulExp.operand);
+                    case MINU -> irManager.addSubInst(addExp.operand, mulExp.operand);
+                    default -> throw new IllegalStateException("Unexpected value: " + addExp.opLexTypeList.get(i));
+                };
             }
         } else {
             addExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
@@ -150,7 +148,7 @@ public class Visitor {
         if (cond == null) {
             return;
         }
-        visit(cond.lOrExp());
+        visit(cond.lOrExp);
     }
 
     private void visit(ConstDecl constDecl) {
@@ -263,7 +261,21 @@ public class Visitor {
         if (eqExp == null) {
             return;
         }
-        eqExp.relExpList().forEach(this::visit);
+        eqExp.relExpList.forEach(this::visit);
+
+        eqExp.operand = eqExp.relExpList.get(0).operand;
+        for (int i = 0; i < eqExp.opLexTypeList.size(); i++) { // 这个还可以处理 2 == 2 == 1的情况
+            var relExp = eqExp.relExpList.get(1 + i);
+            eqExp.operand = switch (eqExp.opLexTypeList.get(i)) {
+                case EQL -> irManager.addIcmpInst(IcmpInst.IcmpCond.EQ, eqExp.operand, relExp.operand);
+                case NEQ -> irManager.addIcmpInst(IcmpInst.IcmpCond.NE, eqExp.operand, relExp.operand);
+                default -> throw new IllegalStateException("Unexpected value: " + eqExp.opLexTypeList.get(i));
+            };
+        }
+        if (eqExp.operand.irType.irValueType != IRType.IRValueType.I1) {
+            eqExp.operand = irManager.addIcmpInst(IcmpInst.IcmpCond.NE, new ConstantOperand(0), eqExp.operand);
+        }
+        irManager.addBrInst(eqExp.operand, eqExp.nextEqExpBasicBlock, eqExp.nextLAndExpBasicBlock);
     }
 
     private VisitResult visit(Exp exp) {
@@ -419,7 +431,29 @@ public class Visitor {
         if (lAndExp == null) {
             return;
         }
-        lAndExp.eqExpList().forEach(this::visit);
+
+        for (int i = 0; i < lAndExp.eqExpList.size(); i++) {
+            var eqExp = lAndExp.eqExpList.get(i);
+            eqExp.nextLAndExpBasicBlock = lAndExp.nextLAndExpBasicBlock; // 如果外层是最后一个lAnd那么这个就是stmt2(如果没有stmt2那么就是stmt3)
+            if (i == 0) {
+                eqExp.eqExpBasicBlock = lAndExp.lAndExpBasicBlock;
+            } else {
+                eqExp.eqExpBasicBlock = new BasicBlock();
+            }
+        }
+        for (int i = 0; i < lAndExp.eqExpList.size(); i++) {
+            var eqExp = lAndExp.eqExpList.get(i);
+            if (i == lAndExp.eqExpList.size() - 1) {
+                // 如果是最后一个eqExp
+                eqExp.nextEqExpBasicBlock = lAndExp.stmt1BasicBlock;
+            } else {
+                eqExp.nextEqExpBasicBlock = lAndExp.eqExpList.get(1 + i).eqExpBasicBlock;
+            }
+            if (i != 0) {
+                irManager.setCurrentBasicBlock(eqExp.eqExpBasicBlock);
+            }
+            visit(eqExp);
+        }
     }
 
     private void visit(LOrExp lOrExp) {
@@ -428,7 +462,34 @@ public class Visitor {
         if (lOrExp == null) {
             return;
         }
-        lOrExp.lAndExpList().forEach(this::visit);
+        for (int i = 0; i < lOrExp.lAndExpList.size(); i++) {
+            var lAndExp = lOrExp.lAndExpList.get(i);
+            lAndExp.stmt1BasicBlock = lOrExp.stmt1BasicBlock;
+            if (i == 0) {
+                lAndExp.lAndExpBasicBlock = lOrExp.condBasicBlock;
+            } else {
+                lAndExp.lAndExpBasicBlock = new BasicBlock();
+            }
+        }
+        for (int i = 0; i < lOrExp.lAndExpList.size(); i++) {
+            var lAndExp = lOrExp.lAndExpList.get(i);
+            if (i == lOrExp.lAndExpList.size() - 1) {
+                // 如果是最后一个lAndExp
+                if (lOrExp.stmt2BasicBlock == null) {
+                    // 如果没有else stmt
+                    lAndExp.nextLAndExpBasicBlock = lOrExp.stmt3BasicBlock;
+                } else {
+                    lAndExp.nextLAndExpBasicBlock = lOrExp.stmt2BasicBlock;
+                }
+            } else {
+                lAndExp.nextLAndExpBasicBlock = lOrExp.lAndExpList.get(1 + i).lAndExpBasicBlock;
+            }
+            if (i != 0) {
+                // 如果不是第一个，那么就设置一下进入新的block
+                irManager.setCurrentBasicBlock(lAndExp.lAndExpBasicBlock);
+            }
+            visit(lAndExp);
+        }
     }
 
     private VisitResult visit(LVal lVal, boolean checkConst, boolean isFromPrimaryExp) {
@@ -540,16 +601,12 @@ public class Visitor {
         if (!isConst) { // 常量优化
             for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
                 var unaryExp = mulExp.unaryExpList.get(1 + i);
-                var tempOperand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
-                switch (mulExp.opLexTypeList.get(i)) {
-                    case MULT ->
-                            irManager.addInstruction(new MulInst(tempOperand, IRType.IRValueType.I32, mulExp.operand, unaryExp.operand));
-                    case DIV ->
-                            irManager.addInstruction(new SdivInst(tempOperand, IRType.IRValueType.I32, mulExp.operand, unaryExp.operand));
-                    case MOD ->
-                            irManager.addInstruction(new SremInst(tempOperand, IRType.IRValueType.I32, mulExp.operand, unaryExp.operand));
-                }
-                mulExp.operand = tempOperand;
+                mulExp.operand = switch (mulExp.opLexTypeList.get(i)) {
+                    case MULT -> irManager.addMulInst(mulExp.operand, unaryExp.operand);
+                    case DIV -> irManager.addSdivInst(mulExp.operand, unaryExp.operand);
+                    case MOD -> irManager.addSremInst(mulExp.operand, unaryExp.operand);
+                    default -> throw new IllegalStateException("Unexpected value: " + mulExp.opLexTypeList.get(i));
+                };
             }
         } else {
             mulExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
@@ -600,7 +657,19 @@ public class Visitor {
         if (relExp == null) {
             return;
         }
-        relExp.addExpList().forEach(this::visit);
+        relExp.addExpList.forEach(this::visit);
+
+        relExp.operand = relExp.addExpList.get(0).operand;
+        for (int i = 0; i < relExp.opLexTypeList.size(); i++) {
+            var addExp = relExp.addExpList.get(1 + i);
+            relExp.operand = switch (relExp.opLexTypeList.get(i)) { // 在addIcmpInst中包含了类型转换以处理 1<2<3 连比的情况
+                case LSS -> irManager.addIcmpInst(IcmpInst.IcmpCond.SLT, relExp.operand, addExp.operand);
+                case LEQ -> irManager.addIcmpInst(IcmpInst.IcmpCond.SLE, relExp.operand, addExp.operand);
+                case GRE -> irManager.addIcmpInst(IcmpInst.IcmpCond.SGT, relExp.operand, addExp.operand);
+                case GEQ -> irManager.addIcmpInst(IcmpInst.IcmpCond.SGE, relExp.operand, addExp.operand);
+                default -> throw new IllegalStateException("Unexpected value: " + relExp.opLexTypeList.get(i));
+            };
+        }
     }
 
     private void visit(Stmt stmt) {
@@ -638,11 +707,29 @@ public class Visitor {
             loop--;
         } else if (stmt instanceof StmtIf stmtIf) {
             // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+            var condBasicBlock = new BasicBlock();
+            var trueBasicBlock = new BasicBlock();
+            var falseBasicBlock = stmtIf.elseStmt == null ? null : new BasicBlock();
+            var endBasicBlock = new BasicBlock();
+            stmtIf.cond.lOrExp.condBasicBlock = condBasicBlock;
+            stmtIf.cond.lOrExp.stmt1BasicBlock = trueBasicBlock;
+            stmtIf.cond.lOrExp.stmt2BasicBlock = falseBasicBlock;
+            stmtIf.cond.lOrExp.stmt3BasicBlock = endBasicBlock;
+
+            irManager.addBrInst(condBasicBlock);
+            irManager.setCurrentBasicBlock(condBasicBlock);
+
             visit(stmtIf.cond);
+
+            irManager.setCurrentBasicBlock(trueBasicBlock);
             visit(stmtIf.stmt);
+            irManager.addBrInst(endBasicBlock); // 在trueBasicBlock最后加跳转到endBasicBlock的命令
             if (stmtIf.elseStmt != null) {
+                irManager.setCurrentBasicBlock(falseBasicBlock);
                 visit(stmtIf.elseStmt);
+                irManager.addBrInst(endBasicBlock); // 在falseBasicBlock最后加跳转到endBasicBlock的命令
             }
+            irManager.setCurrentBasicBlock(endBasicBlock);
         } else if (stmt instanceof StmtLValExp stmtLValExp) {
             // LVal '=' Exp ';'               -> Ident { '[' Exp ']' } '=' Exp ';'
             // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '('...

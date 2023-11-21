@@ -22,14 +22,12 @@ public class Function extends GlobalDecl {
     public String ident;
     public IRType returnIRType;
     private final LabelManager labelManager;
-    private final List<VarSymbol> varSymbolList;
-    private List<Operand> paramOperandList;
+    private final List<Operand> paramOperandList;
 
 
     public Function(IRType returnIRType, String ident, List<VarSymbol> varSymbolList) {
         this.paramOperandList = new ArrayList<>();
         this.labelManager = new LabelManager();
-        this.varSymbolList = varSymbolList;
         varSymbolList.forEach(varSymbol -> varSymbol.operand = allocTempOperand(new IRType(varSymbol.valueType)));
         this.basicBlockList = new ArrayList<>();
         basicBlockList.add(new BasicBlock(labelManager.allocLabel()));
@@ -46,18 +44,16 @@ public class Function extends GlobalDecl {
                 currentBasicBlock.instructionList.add(new StoreInst(varSymbol.operand, tempOperand));
                 varSymbol.operand = tempOperand;
             }
-
-//            if (!varSymbol.valueType.shape().isEmpty()) {
-////                var newShape = new ArrayList<Integer>(varSymbol.valueType.shape());
-////                newShape.remove(0);
-////                var newTempOperand = allocTempOperand(new IRType(IRType.IRValueType.I32, false, newShape));
-//                var newTempOperand = allocTempOperand(varSymbol.operand.irType);
-//                currentBasicBlock.instructionList.add(new LoadInst(newTempOperand, tempOperand));
-//                tempOperand = newTempOperand;
-//            }
         });
         this.returnIRType = returnIRType;
         this.ident = "@" + ident;
+    }
+
+    public void addBasicBlock(BasicBlock basicBlock) {
+        if (basicBlock.label == -1) {
+            basicBlock.label = labelManager.allocLabel();
+        }
+        basicBlockList.add(basicBlock);
     }
 
     public TempOperand allocTempOperand(IRType irType) {

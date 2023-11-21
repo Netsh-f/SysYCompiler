@@ -18,8 +18,14 @@ public class BasicBlock extends Value {
         this.instructionList = new ArrayList<>();
     }
 
+    public BasicBlock(){
+        this.label = -1; // 暂不分配label，在进入function的basicBlockList的时候（设置currentBasicBlock时）再分配
+        this.instructionList = new ArrayList<>();
+    }
+
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(label).append(":\n");
         instructionList.forEach(instruction -> stringBuilder.append("    ").append(instruction));
         return stringBuilder.toString();
     }

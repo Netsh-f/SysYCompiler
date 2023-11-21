@@ -4,9 +4,18 @@
 */
 package Compiler.Parser.Nodes;
 
+import Compiler.LLVMIR.Operand.Operand;
 import Compiler.Lexer.LexType;
 
 import java.util.List;
 
-public record RelExp(List<AddExp> addExpList, List<LexType> opLexTypeList) {
+public class RelExp {
+    public List<AddExp> addExpList;
+    public List<LexType> opLexTypeList;
+    public Operand operand;
+
+    public RelExp(List<AddExp> addExpList, List<LexType> opLexTypeList) {
+        this.addExpList = addExpList;
+        this.opLexTypeList = opLexTypeList;
+    }
 }

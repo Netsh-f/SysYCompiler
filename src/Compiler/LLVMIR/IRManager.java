@@ -5,7 +5,7 @@ import Compiler.LLVMIR.Global.GlobalConst;
 import Compiler.LLVMIR.Global.GlobalStr;
 import Compiler.LLVMIR.Global.LabelManager;
 import Compiler.LLVMIR.Instructions.*;
-import Compiler.LLVMIR.Instructions.Quadruple.AddInst;
+import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Operand.GlobalOperand;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
@@ -13,7 +13,6 @@ import Compiler.SymbolManager.Symbol.FuncSymbol;
 import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 import Compiler.SymbolManager.Symbol.VarSymbol;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,15 +22,75 @@ public class IRManager {
     private final IRModule module;
     private Function currentFunction;
     private BasicBlock currentBasicBlock;
-    private LabelManager strLabelManager;
+    private final LabelManager strLabelManager;
 
     public IRManager() {
         this.module = new IRModule();
         this.strLabelManager = new LabelManager();
     }
 
+    public void addBrInst(BasicBlock basicBlock) {
+        addInstruction(new BrInst(basicBlock));
+    }
+
+    public void addBrInst(Operand condOperand, BasicBlock trueBasicBlock, BasicBlock falseBasicBlock) {
+        addInstruction(new BrInst(condOperand, trueBasicBlock, falseBasicBlock));
+    }
+
+
+    public void setCurrentBasicBlock(BasicBlock basicBlock) {
+        currentFunction.addBasicBlock(basicBlock);
+        currentBasicBlock = basicBlock;
+    }
+
     public boolean isInGlobal() {
         return currentFunction == null;
+    }
+
+    public TempOperand addIcmpInst(IcmpInst.IcmpCond cond, Operand operand1, Operand operand2) {
+        // 如果op1与op2类型不同，那么将op1的类型转为op2的类型
+        if (operand1.irType.irValueType != operand2.irType.irValueType) { // 不管数组了，理论上不会出现
+            operand1 = addZextInst(operand2.irType, operand1);
+        }
+        var tempOperand = allocTempOperand(new IRType(IRType.IRValueType.I1, false));
+        addInstruction(new IcmpInst(tempOperand, cond, operand1, operand2));
+        return tempOperand;
+    }
+
+    public TempOperand addZextInst(IRType resultIRType, Operand valueOperand) {
+        var tempOperand = allocTempOperand(resultIRType);
+        addInstruction(new ZextInst(tempOperand, valueOperand));
+        return tempOperand;
+    }
+
+    public TempOperand addAddInst(Operand operand1, Operand operand2) {
+        var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
+        addInstruction(new AddInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
+    }
+
+    public TempOperand addSubInst(Operand operand1, Operand operand2) {
+        var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
+        addInstruction(new SubInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
+    }
+
+    public TempOperand addMulInst(Operand operand1, Operand operand2) {
+        var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
+        addInstruction(new MulInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
+    }
+
+    public TempOperand addSdivInst(Operand operand1, Operand operand2) {
+        var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
+        addInstruction(new SdivInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
+    }
+
+    public TempOperand addSremInst(Operand operand1, Operand operand2) {
+        var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
+        addInstruction(new SremInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
     }
 
     public TempOperand allocTempOperand(IRType irType) {

@@ -4,5 +4,12 @@
 */
 package Compiler.Parser.Nodes;
 
-public record Cond(LOrExp lOrExp) {
+import Compiler.LLVMIR.BasicBlock;
+
+public class Cond {
+    public LOrExp lOrExp;
+
+    public Cond(LOrExp lOrExp) {
+        this.lOrExp = lOrExp;
+    }
 }
