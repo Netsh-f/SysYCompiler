@@ -27,11 +27,11 @@ import Utils.OutputHelper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 public class Visitor {
     private final CompUnit unit;
     private final SymbolManager symbolManager;
-    private int loop = 0;
     private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
 
     // LLVM IR attr
@@ -295,6 +295,7 @@ public class Visitor {
         }
         visit(forStmt.lVal(), true, false); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
+        irManager.addStoreInst(forStmt.exp().operand, forStmt.lVal().operand);
     }
 
     private void visit(FuncDef funcDef) {
@@ -672,6 +673,9 @@ public class Visitor {
         }
     }
 
+    private Stack<BasicBlock> forStmt3BasicBlockStack = new Stack<>(); // 给for跳转使用的栈
+    private Stack<BasicBlock> endBasicBlockStack = new Stack<>();
+
     private void visit(Stmt stmt) {
         //Stmt → LVal '=' Exp ';'
         //| [Exp] ';'
@@ -690,46 +694,69 @@ public class Visitor {
             visit(stmtBlock.block, false);
             symbolManager.traceBack();
         } else if (stmt instanceof StmtBreak stmtBreak) {
-            if (loop == 0) {
+            if (endBasicBlockStack.isEmpty()) {
                 OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtBreak.token.lineNum(), "break statement not within a loop");
+            } else {
+                irManager.addBrInst(endBasicBlockStack.peek());
+                irManager.setCurrentBasicBlock(new BasicBlock());
             }
         } else if (stmt instanceof StmtContinue stmtContinue) {
-            if (loop == 0) {
+            if (forStmt3BasicBlockStack.isEmpty()) {
                 OutputHelper.addError(ErrorType.BREAK_CONTINUE_ERROR, stmtContinue.token.lineNum(), "continue statement not within a loop");
+            } else {
+                irManager.addBrInst(forStmt3BasicBlockStack.peek());
+                irManager.setCurrentBasicBlock(new BasicBlock());
             }
         } else if (stmt instanceof StmtFor stmtFor) {
             // 'for' '(' [ForStmt] ';' [Cond] ';' [forStmt] ')' Stmt
-            visit(stmtFor.forStmt1);
-            visit(stmtFor.cond);
-            visit(stmtFor.forStmt3);
-            loop++;
-            visit(stmtFor.stmt);
-            loop--;
-        } else if (stmt instanceof StmtIf stmtIf) {
-            // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
             var condBasicBlock = new BasicBlock();
-            var trueBasicBlock = new BasicBlock();
-            var falseBasicBlock = stmtIf.elseStmt == null ? null : new BasicBlock();
+            var stmt1BasicBlock = new BasicBlock();
+            var forStmt3BasicBlock = new BasicBlock();
             var endBasicBlock = new BasicBlock();
-            stmtIf.cond.lOrExp.condBasicBlock = condBasicBlock;
-            stmtIf.cond.lOrExp.stmt1BasicBlock = trueBasicBlock;
-            stmtIf.cond.lOrExp.stmt2BasicBlock = falseBasicBlock;
-            stmtIf.cond.lOrExp.stmt3BasicBlock = endBasicBlock;
+            stmtFor.cond.lOrExp.condBasicBlock = condBasicBlock;
+            stmtFor.cond.lOrExp.stmt1BasicBlock = stmt1BasicBlock;
+            stmtFor.cond.lOrExp.stmt3BasicBlock = endBasicBlock;
+            visit(stmtFor.forStmt1);
 
             irManager.addBrInst(condBasicBlock);
             irManager.setCurrentBasicBlock(condBasicBlock);
+            visit(stmtFor.cond);
 
-            visit(stmtIf.cond);
+            irManager.setCurrentBasicBlock(forStmt3BasicBlock);
+            visit(stmtFor.forStmt3);
+            irManager.addBrInst(condBasicBlock);
 
-            irManager.setCurrentBasicBlock(trueBasicBlock);
-            visit(stmtIf.stmt);
-            irManager.addBrInst(endBasicBlock); // 在trueBasicBlock最后加跳转到endBasicBlock的命令
-            if (stmtIf.elseStmt != null) {
-                irManager.setCurrentBasicBlock(falseBasicBlock);
-                visit(stmtIf.elseStmt);
-                irManager.addBrInst(endBasicBlock); // 在falseBasicBlock最后加跳转到endBasicBlock的命令
-            }
+            irManager.setCurrentBasicBlock(stmt1BasicBlock);
+            forStmt3BasicBlockStack.push(forStmt3BasicBlock);
+            endBasicBlockStack.push(endBasicBlock);
+            visit(stmtFor.stmt);
+            endBasicBlockStack.pop();
+            forStmt3BasicBlockStack.pop();
+            irManager.addBrInst(forStmt3BasicBlock);
+
             irManager.setCurrentBasicBlock(endBasicBlock);
+        } else if (stmt instanceof StmtIf stmtIf) {
+            // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+            var condBasicBlock = new BasicBlock();
+            var stmt1BasicBlock = new BasicBlock();
+            var stmt2BasicBlock = stmtIf.elseStmt == null ? null : new BasicBlock();
+            var stmt3BasicBlock = new BasicBlock();
+            stmtIf.cond.lOrExp.condBasicBlock = condBasicBlock;
+            stmtIf.cond.lOrExp.stmt1BasicBlock = stmt1BasicBlock;
+            stmtIf.cond.lOrExp.stmt2BasicBlock = stmt2BasicBlock;
+            stmtIf.cond.lOrExp.stmt3BasicBlock = stmt3BasicBlock;
+            irManager.addBrInst(condBasicBlock);
+            irManager.setCurrentBasicBlock(condBasicBlock);
+            visit(stmtIf.cond);
+            irManager.setCurrentBasicBlock(stmt1BasicBlock);
+            visit(stmtIf.stmt);
+            irManager.addBrInst(stmt3BasicBlock); // 在trueBasicBlock最后加跳转到endBasicBlock的命令
+            if (stmtIf.elseStmt != null) {
+                irManager.setCurrentBasicBlock(stmt2BasicBlock);
+                visit(stmtIf.elseStmt);
+                irManager.addBrInst(stmt3BasicBlock); // 在falseBasicBlock最后加跳转到endBasicBlock的命令
+            }
+            irManager.setCurrentBasicBlock(stmt3BasicBlock);
         } else if (stmt instanceof StmtLValExp stmtLValExp) {
             // LVal '=' Exp ';'               -> Ident { '[' Exp ']' } '=' Exp ';'
             // | LVal '=' 'getint''('')'';'   -> Ident { '[' Exp ']' } '=' 'getint' '('...
