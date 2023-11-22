@@ -9,7 +9,6 @@ import Compiler.LLVMIR.IRManager;
 import Compiler.LLVMIR.IRModule;
 import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Instructions.*;
-import Compiler.LLVMIR.Instructions.Quadruple.*;
 import Compiler.LLVMIR.Operand.ConstantOperand;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.Lexer.LexType;
@@ -45,7 +44,7 @@ public class Visitor {
 
     public IRModule run() {
         visit(this.unit);
-        irManager.assignLabel();
+        irManager.finalizeProcessing();
         return irManager.getModule();
     }
 
@@ -209,6 +208,7 @@ public class Visitor {
             indexes.add((values.size() - 1) / size % len);
             size *= len;
         }
+        indexes.add(0);
         Collections.reverse(indexes);
         return irManager.addGetElementPtrInst(new ArrayList<>(), varSymbol.operand, indexes);
     }
@@ -326,6 +326,7 @@ public class Visitor {
         visit(funcDef.block(), returnValueType != ValueTypeEnum.VOID); // 如果不为void函数则检查最后一个语句是否为return
         if (returnValueType == ValueTypeEnum.VOID) { // 如果函数是void，无论是否有"return;"，均在此添加指令
             irManager.addRetInst(null);
+            irManager.setCurrentBasicBlock(new BasicBlock());
         }
         curFuncReturnType = ValueTypeEnum.VOID;
 
@@ -542,7 +543,7 @@ public class Visitor {
                     newOperandShape.remove(0);
                 }
 
-                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, lVal.operand, getElementPtrIndexList);
+                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, varSymbol.operand, getElementPtrIndexList);
             }
 
             if (isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()) {
@@ -794,6 +795,7 @@ public class Visitor {
                 }
                 visit(stmtReturn.exp);
                 irManager.addRetInst(stmtReturn.exp.operand);
+                irManager.setCurrentBasicBlock(new BasicBlock());
             }
         }
     }

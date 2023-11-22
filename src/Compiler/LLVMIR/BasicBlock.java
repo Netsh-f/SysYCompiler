@@ -12,6 +12,7 @@ import java.util.List;
 public class BasicBlock extends Value {
     public List<Instruction> instructionList;
     public int label;
+    public boolean isReachable = false;
 
     public BasicBlock() {
         this.label = -1; // 暂不分配label，在进入function的basicBlockList的时候（设置currentBasicBlock时）再分配

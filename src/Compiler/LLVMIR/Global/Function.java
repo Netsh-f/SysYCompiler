@@ -7,14 +7,13 @@ package Compiler.LLVMIR.Global;
 import Compiler.LLVMIR.BasicBlock;
 import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Instructions.AllocaInst;
-import Compiler.LLVMIR.Instructions.LoadInst;
+import Compiler.LLVMIR.Instructions.BrInst;
 import Compiler.LLVMIR.Instructions.StoreInst;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
 import Compiler.SymbolManager.Symbol.VarSymbol;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Function extends GlobalDecl {
 
@@ -49,20 +48,48 @@ public class Function extends GlobalDecl {
         this.ident = "@" + ident;
     }
 
-    public void assignLabel() {
+    public void finalizeProcessing() {
+        Queue<BasicBlock> basicBlockQueue = new ArrayDeque<>();
+        var startBasicBlock = basicBlockList.get(0);
+        startBasicBlock.isReachable = true;
+        basicBlockQueue.offer(startBasicBlock);
+        while (!basicBlockQueue.isEmpty()) {
+            var basicBlock = basicBlockQueue.poll();
+            basicBlock.instructionList.forEach(instruction -> {
+                if (instruction instanceof BrInst brInst) {
+                    var trueBasicBlock = brInst.trueBasicBlock;
+                    if (trueBasicBlock != null && !trueBasicBlock.isReachable) {
+                        trueBasicBlock.isReachable = true;
+                        basicBlockQueue.offer(trueBasicBlock);
+                    }
+                    var falseBasicBlock = brInst.falseBasicBlock;
+                    if (falseBasicBlock != null && !falseBasicBlock.isReachable) {
+                        falseBasicBlock.isReachable = true;
+                        basicBlockQueue.offer(falseBasicBlock);
+                    }
+                }
+            });
+        }
+
         paramOperandList.forEach(operand -> {
             if (operand instanceof TempOperand tempOperand) {
                 tempOperand.setLabel(labelManager.allocLabel());
             }
         });
-        basicBlockList.forEach(basicBlock -> {
+        Iterator<BasicBlock> iterator = basicBlockList.iterator();
+        while (iterator.hasNext()) {
+            var basicBlock = iterator.next();
+            if (!basicBlock.isReachable) {
+                iterator.remove();
+                continue;
+            }
             basicBlock.setLabel(labelManager.allocLabel());
             basicBlock.instructionList.forEach(instruction -> {
                 if (instruction.resultOperand != null) {
                     instruction.resultOperand.setLabel(labelManager.allocLabel());
                 }
             });
-        });
+        }
     }
 
     public void addBasicBlock(BasicBlock basicBlock) {
