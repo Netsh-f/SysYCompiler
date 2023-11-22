@@ -674,8 +674,8 @@ public class Visitor {
         }
     }
 
-    private Stack<BasicBlock> forStmt3BasicBlockStack = new Stack<>(); // 给for跳转使用的栈
-    private Stack<BasicBlock> endBasicBlockStack = new Stack<>();
+    private final Stack<BasicBlock> forStmt3BasicBlockStack = new Stack<>(); // 给for跳转使用的栈
+    private final Stack<BasicBlock> endBasicBlockStack = new Stack<>();
 
     private void visit(Stmt stmt) {
         //Stmt → LVal '=' Exp ';'
