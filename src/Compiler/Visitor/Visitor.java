@@ -45,6 +45,7 @@ public class Visitor {
 
     public IRModule run() {
         visit(this.unit);
+        irManager.assignLabel();
         return irManager.getModule();
     }
 
@@ -295,7 +296,6 @@ public class Visitor {
         }
         visit(forStmt.lVal(), true, false); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
-        irManager.addStoreInst(forStmt.exp().operand, forStmt.lVal().operand);
     }
 
     private void visit(FuncDef funcDef) {
@@ -542,7 +542,7 @@ public class Visitor {
                     newOperandShape.remove(0);
                 }
 
-                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, varSymbol.operand, getElementPtrIndexList);
+                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, lVal.operand, getElementPtrIndexList);
             }
 
             if (isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()) {
@@ -817,9 +817,9 @@ public class Visitor {
                     result.value = -result.value;
                     if (!irManager.isInGlobal()) {
                         if (result.isConst) {
-                            unaryExp.operand = new ConstantOperand(-result.value);
+                            unaryExp.operand = new ConstantOperand(result.value);
                         } else {
-                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.unaryExp.operand);
+                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.operand);
                         }
                     }
                 }

@@ -6,9 +6,10 @@ package Compiler.LLVMIR.Instructions.Quadruple;
 
 import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class SubInst extends QuadrupleInst {
-    public SubInst(Operand resultOperand, IRType.IRValueType type, Operand operand1, Operand operand2) {
+    public SubInst(TempOperand resultOperand, IRType.IRValueType type, Operand operand1, Operand operand2) {
         super(resultOperand, type, operand1, operand2);
     }
 

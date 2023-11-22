@@ -5,12 +5,12 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class ZextInst extends Instruction {
-    public Operand resultOperand;
     public Operand valueOperand;
 
-    public ZextInst(Operand resultOperand, Operand valueOperand) {
+    public ZextInst(TempOperand resultOperand, Operand valueOperand) {
         this.resultOperand = resultOperand;
         this.valueOperand = valueOperand;
     }

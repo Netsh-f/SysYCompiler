@@ -6,11 +6,11 @@ package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Global.Function;
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 import java.util.List;
 
 public class CallInst extends Instruction {
-    public Operand resultOperand;
     public Function function;
     public List<Operand> paramOperandList;
 
@@ -20,7 +20,7 @@ public class CallInst extends Instruction {
         this.paramOperandList = paramOperandList;
     }
 
-    public CallInst(Operand resultOperand, Function function, List<Operand> paramOperandList) {
+    public CallInst(TempOperand resultOperand, Function function, List<Operand> paramOperandList) {
         this.resultOperand = resultOperand;
         this.function = function;
         this.paramOperandList = paramOperandList;

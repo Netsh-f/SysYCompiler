@@ -5,12 +5,12 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class AllocaInst extends Instruction {
-    public Operand resultOperand;
 
 
-    public AllocaInst(Operand resultOperand) {
+    public AllocaInst(TempOperand resultOperand) {
         this.resultOperand = resultOperand;
     }
 

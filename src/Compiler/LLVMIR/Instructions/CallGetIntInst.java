@@ -5,11 +5,11 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class CallGetIntInst extends Instruction {
-    public Operand resultOperand;
 
-    public CallGetIntInst(Operand resultOperand) {
+    public CallGetIntInst(TempOperand resultOperand) {
         this.resultOperand = resultOperand;
     }
 

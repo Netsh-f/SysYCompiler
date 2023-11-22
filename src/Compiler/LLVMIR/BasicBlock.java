@@ -13,14 +13,13 @@ public class BasicBlock extends Value {
     public List<Instruction> instructionList;
     public int label;
 
-    public BasicBlock(int label) {
-        this.label = label;
+    public BasicBlock() {
+        this.label = -1; // 暂不分配label，在进入function的basicBlockList的时候（设置currentBasicBlock时）再分配
         this.instructionList = new ArrayList<>();
     }
 
-    public BasicBlock(){
-        this.label = -1; // 暂不分配label，在进入function的basicBlockList的时候（设置currentBasicBlock时）再分配
-        this.instructionList = new ArrayList<>();
+    public void setLabel(int label) {
+        this.label = label;
     }
 
     public String toString() {

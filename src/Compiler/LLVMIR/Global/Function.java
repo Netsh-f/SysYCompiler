@@ -30,7 +30,7 @@ public class Function extends GlobalDecl {
         this.labelManager = new LabelManager();
         varSymbolList.forEach(varSymbol -> varSymbol.operand = allocTempOperand(new IRType(varSymbol.valueType)));
         this.basicBlockList = new ArrayList<>();
-        basicBlockList.add(new BasicBlock(labelManager.allocLabel()));
+        basicBlockList.add(new BasicBlock());
         var currentBasicBlock = basicBlockList.get(0);
 
         varSymbolList.forEach(varSymbol -> {
@@ -49,15 +49,28 @@ public class Function extends GlobalDecl {
         this.ident = "@" + ident;
     }
 
+    public void assignLabel() {
+        paramOperandList.forEach(operand -> {
+            if (operand instanceof TempOperand tempOperand) {
+                tempOperand.setLabel(labelManager.allocLabel());
+            }
+        });
+        basicBlockList.forEach(basicBlock -> {
+            basicBlock.setLabel(labelManager.allocLabel());
+            basicBlock.instructionList.forEach(instruction -> {
+                if (instruction.resultOperand != null) {
+                    instruction.resultOperand.setLabel(labelManager.allocLabel());
+                }
+            });
+        });
+    }
+
     public void addBasicBlock(BasicBlock basicBlock) {
-        if (basicBlock.label == -1) {
-            basicBlock.label = labelManager.allocLabel();
-        }
         basicBlockList.add(basicBlock);
     }
 
     public TempOperand allocTempOperand(IRType irType) {
-        return new TempOperand(labelManager.allocLabel(), irType);
+        return new TempOperand(-1, irType);
     }
 
     @Override
