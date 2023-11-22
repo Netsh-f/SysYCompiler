@@ -5,6 +5,7 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class IcmpInst extends Instruction {
     // <result> = icmp <cond> <ty> <op1>, <op2>
@@ -34,12 +35,11 @@ public class IcmpInst extends Instruction {
         }
     }
 
-    public Operand resultOperand;
     public IcmpCond cond;
     public Operand operand1;
     public Operand operand2;
 
-    public IcmpInst(Operand resultOperand, IcmpCond cond, Operand operand1, Operand operand2) {
+    public IcmpInst(TempOperand resultOperand, IcmpCond cond, Operand operand1, Operand operand2) {
         this.resultOperand = resultOperand;
         this.cond = cond;
         this.operand1 = operand1;

@@ -45,6 +45,7 @@ public class Visitor {
 
     public IRModule run() {
         visit(this.unit);
+        irManager.assignLabel();
         return irManager.getModule();
     }
 
@@ -789,9 +790,10 @@ public class Visitor {
                 case MINU -> {
                     result.value = -result.value;
                     if (!irManager.isInGlobal()) {
-                        unaryExp.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
-                        if (!result.isConst) { // 常量优化
-                            irManager.addInstruction(new SubInst(unaryExp.operand, IRType.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
+                        if (result.isConst) {
+                            unaryExp.operand = new ConstantOperand(result.value);
+                        } else {
+                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.operand);
                         }
                     }
                 }
@@ -801,6 +803,7 @@ public class Visitor {
                     } else {
                         result.value = 1;
                     }
+                    //todo
                 }
                 default -> throw new IllegalStateException("Unexpected value: " + op);
             }

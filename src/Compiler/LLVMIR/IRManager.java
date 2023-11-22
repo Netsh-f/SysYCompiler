@@ -29,6 +29,14 @@ public class IRManager {
         this.strLabelManager = new LabelManager();
     }
 
+    public void assignLabel() {
+        this.module.globalDeclList.forEach(globalDecl -> {
+            if (globalDecl instanceof Function function) {
+                function.assignLabel();
+            }
+        });
+    }
+
     public void addBrInst(BasicBlock basicBlock) {
         addInstruction(new BrInst(basicBlock));
     }

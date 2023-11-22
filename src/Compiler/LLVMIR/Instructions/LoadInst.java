@@ -5,12 +5,12 @@
 package Compiler.LLVMIR.Instructions;
 
 import Compiler.LLVMIR.Operand.Operand;
+import Compiler.LLVMIR.Operand.TempOperand;
 
 public class LoadInst extends Instruction {
-    public Operand resultOperand;
     public Operand pointerOperand;
 
-    public LoadInst(Operand resultOperand, Operand pointerOperand) {
+    public LoadInst(TempOperand resultOperand, Operand pointerOperand) {
         this.resultOperand = resultOperand;
         this.pointerOperand = pointerOperand;
     }
