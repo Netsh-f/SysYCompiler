@@ -226,11 +226,10 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = initValForConstAndVar(values, varSymbol);
-                    irManager.addInstruction(new StoreInst(constInitVal.constExp().addExp().operand, tempOperand));
+                    irManager.addStoreInst(constInitVal.constExp().addExp().operand, initValForConstAndVar(values, varSymbol));
                 } else {
                     // 不是数组
-                    irManager.addInstruction(new StoreInst(constInitVal.constExp().addExp().operand, varSymbol.operand));
+                    irManager.addStoreInst(constInitVal.constExp().addExp().operand, varSymbol.operand);
                 }
             }
         } else if (!constInitVal.constInitValList().isEmpty()) {
@@ -296,6 +295,7 @@ public class Visitor {
         }
         visit(forStmt.lVal(), true, false); // 题目没有要求在这个地方检查是否改变常量
         visit(forStmt.exp());
+        irManager.addStoreInst(forStmt.exp().operand, forStmt.lVal().operand);
     }
 
     private void visit(FuncDef funcDef) {
@@ -407,11 +407,10 @@ public class Visitor {
                 if (!varSymbol.operand.irType.shape.isEmpty()) {
                     // 如果是数组
                     // 确定 getelementptr 的下标
-                    var tempOperand = initValForConstAndVar(values, varSymbol);
-                    irManager.addInstruction(new StoreInst(initVal.exp().operand, tempOperand));
+                    irManager.addStoreInst(initVal.exp().operand, initValForConstAndVar(values, varSymbol));
                 } else {
                     //不是数组
-                    irManager.addInstruction(new StoreInst(initVal.exp().operand, varSymbol.operand));
+                    irManager.addStoreInst(initVal.exp().operand, varSymbol.operand);
                 }
             }
         } else if (!initVal.initValList().isEmpty()) {
@@ -714,14 +713,20 @@ public class Visitor {
             var stmt1BasicBlock = new BasicBlock();
             var forStmt3BasicBlock = new BasicBlock();
             var endBasicBlock = new BasicBlock();
-            stmtFor.cond.lOrExp.condBasicBlock = condBasicBlock;
-            stmtFor.cond.lOrExp.stmt1BasicBlock = stmt1BasicBlock;
-            stmtFor.cond.lOrExp.stmt3BasicBlock = endBasicBlock;
+            if (stmtFor.cond != null) {
+                stmtFor.cond.lOrExp.condBasicBlock = condBasicBlock;
+                stmtFor.cond.lOrExp.stmt1BasicBlock = stmt1BasicBlock;
+                stmtFor.cond.lOrExp.stmt3BasicBlock = endBasicBlock;
+            }
             visit(stmtFor.forStmt1);
 
             irManager.addBrInst(condBasicBlock);
             irManager.setCurrentBasicBlock(condBasicBlock);
             visit(stmtFor.cond);
+            if (stmtFor.cond == null) {
+                // for(xxx;;xxx) 意味着永真
+                irManager.addBrInst(stmt1BasicBlock);
+            }
 
             irManager.setCurrentBasicBlock(forStmt3BasicBlock);
             visit(stmtFor.forStmt3);
@@ -766,7 +771,7 @@ public class Visitor {
                 case LVALEXP -> {
                     visit(stmtLValExp.lVal, true, false);
                     visit(stmtLValExp.exp);
-                    irManager.addInstruction(new StoreInst(stmtLValExp.exp.operand, stmtLValExp.lVal.operand));
+                    irManager.addStoreInst(stmtLValExp.exp.operand, stmtLValExp.lVal.operand);
                 }
                 case GETINT -> {
                     visit(stmtLValExp.lVal, true, false);
@@ -821,7 +826,7 @@ public class Visitor {
                         if (result.isConst) {
                             unaryExp.operand = new ConstantOperand(result.value);
                         } else {
-                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.operand);
+                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.unaryExp.operand);
                         }
                     }
                 }
@@ -869,11 +874,9 @@ public class Visitor {
             }
 
             if (funcSymbol.valueTypeEnum == ValueTypeEnum.VOID) { // 如果是void就不开寄存器储存返回值了
-                irManager.addInstruction(new CallInst(funcSymbol.function, funcRParamOperandList));
+                irManager.addVoidCallInst(funcSymbol.function, funcRParamOperandList);
             } else {
-                var tempOperand = irManager.allocTempOperand(new IRType(new ValueType(funcSymbol.valueTypeEnum, new ArrayList<>())));
-                irManager.addInstruction(new CallInst(tempOperand, funcSymbol.function, funcRParamOperandList));
-                unaryExp.operand = tempOperand;
+                unaryExp.operand = irManager.addCallInst(funcSymbol.function, funcRParamOperandList);
             }
 
             return new VisitResult(new ValueType(funcSymbol.valueTypeEnum, new ArrayList<>()), false, 0);

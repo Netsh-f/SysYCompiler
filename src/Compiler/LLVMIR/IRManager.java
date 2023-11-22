@@ -57,8 +57,12 @@ public class IRManager {
 
     public TempOperand addIcmpInst(IcmpInst.IcmpCond cond, Operand operand1, Operand operand2) {
         // 如果op1与op2类型不同，那么将op1的类型转为op2的类型
-        if (operand1.irType.irValueType != operand2.irType.irValueType) { // 不管数组了，理论上不会出现
-            operand1 = addZextInst(operand2.irType, operand1);
+        if (operand1.irType.irValueType != operand2.irType.irValueType) { // 不管数组了，理论上不会出现，应该只可能出现i1转i32
+            if (operand1.irType.irValueType == IRType.IRValueType.I1) {
+                operand1 = addZextInst(operand2.irType, operand1);
+            } else if (operand2.irType.irValueType == IRType.IRValueType.I1) {
+                operand2 = addZextInst(operand1.irType, operand2);
+            }
         }
         var tempOperand = allocTempOperand(new IRType(IRType.IRValueType.I1, false));
         addInstruction(new IcmpInst(tempOperand, cond, operand1, operand2));
@@ -86,6 +90,16 @@ public class IRManager {
     public TempOperand addMulInst(Operand operand1, Operand operand2) {
         var tempOperand = allocTempOperand(new IRType(operand1.irType.irValueType, false));
         addInstruction(new MulInst(tempOperand, tempOperand.irType.irValueType, operand1, operand2));
+        return tempOperand;
+    }
+
+    public void addVoidCallInst(Function function, List<Operand> paramOperandList) {
+        addInstruction(new CallInst(function, paramOperandList));
+    }
+
+    public TempOperand addCallInst(Function function, List<Operand> paramOperandList) {
+        var tempOperand = allocTempOperand(function.returnIRType);
+        addInstruction(new CallInst(tempOperand, function, paramOperandList));
         return tempOperand;
     }
 
