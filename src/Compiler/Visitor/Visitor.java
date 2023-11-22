@@ -516,38 +516,40 @@ public class Visitor {
                 newShape.remove(0);
             }
 
-            // llvm
-            if (varSymbol.valueType.shape().isEmpty()) {
-                //如果 varSymbol 不是数组
-                lVal.operand = varSymbol.operand;
-            } else {
-                // 如果 varSymbol 是数组
+            if (!irManager.isInGlobal()) {
+                // llvm
+                if (varSymbol.valueType.shape().isEmpty()) {
+                    //如果 varSymbol 不是数组
+                    lVal.operand = varSymbol.operand;
+                } else {
+                    // 如果 varSymbol 是数组
 
-                // 计算 getElementPtr 的 index
-                var getElementPtrIndexList = new ArrayList<Operand>();
-                if (!varSymbol.isFuncFParam) { // 如果不是函数参数，就在一开始加一个0（将[2 x [2 x i32]]变成[2 x i32]*），如果是函数形参，那么就不要加这个0，因为其本来就是[2 x i32]*
-                    getElementPtrIndexList.add(new ConstantOperand(0));
-                }
-                lVal.expList.forEach(exp -> getElementPtrIndexList.add(exp.operand)); // 把 Exp 的索引加进去
-                if (indexList.size() < varSymbol.valueType.shape().size()) { // 后面补0
-                    getElementPtrIndexList.add(new ConstantOperand(0));
-                }
+                    // 计算 getElementPtr 的 index
+                    var getElementPtrIndexList = new ArrayList<Operand>();
+                    if (!varSymbol.isFuncFParam) { // 如果不是函数参数，就在一开始加一个0（将[2 x [2 x i32]]变成[2 x i32]*），如果是函数形参，那么就不要加这个0，因为其本来就是[2 x i32]*
+                        getElementPtrIndexList.add(new ConstantOperand(0));
+                    }
+                    lVal.expList.forEach(exp -> getElementPtrIndexList.add(exp.operand)); // 把 Exp 的索引加进去
+                    if (indexList.size() < varSymbol.valueType.shape().size()) { // 后面补0
+                        getElementPtrIndexList.add(new ConstantOperand(0));
+                    }
 
-                // 计算新 shape
-                var newOperandShape = new ArrayList<>(varSymbol.valueType.shape());
-                if (varSymbol.isFuncFParam) { // 如果是参数的shape，那么先把表示[]的-1删去
-                    newOperandShape.remove(0);
-                }
-                for (int i = 1; i < getElementPtrIndexList.size(); i++) {
-                    newOperandShape.remove(0);
-                }
+                    // 计算新 shape
+                    var newOperandShape = new ArrayList<>(varSymbol.valueType.shape());
+                    if (varSymbol.isFuncFParam) { // 如果是参数的shape，那么先把表示[]的-1删去
+                        newOperandShape.remove(0);
+                    }
+                    for (int i = 1; i < getElementPtrIndexList.size(); i++) {
+                        newOperandShape.remove(0);
+                    }
 
-                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, varSymbol.operand, getElementPtrIndexList);
-            }
+                    lVal.operand = irManager.addGetElementPtrInst(newOperandShape, varSymbol.operand, getElementPtrIndexList);
 
-            if (isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()) {
-                // 如果取到了元素那一级，那么就开一个 LoadInst
-                lVal.operand = irManager.addLoadInst(lVal.operand);
+                }
+                if (isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()) {
+                    // 如果取到了元素那一级(包括本来就不是数组的情况，也要load)，那么就开一个 LoadInst
+                    lVal.operand = irManager.addLoadInst(lVal.operand);
+                }
             }
 
             return new VisitResult(new ValueType(varSymbol.valueType.type(), newShape), varSymbol.isConst, varSymbol.getValue(indexList)); // 如果是变量的话getValue()会直接返回一个0
