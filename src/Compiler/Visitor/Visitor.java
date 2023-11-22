@@ -542,7 +542,7 @@ public class Visitor {
                     newOperandShape.remove(0);
                 }
 
-                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, lVal.operand, getElementPtrIndexList);
+                lVal.operand = irManager.addGetElementPtrInst(newOperandShape, varSymbol.operand, getElementPtrIndexList);
             }
 
             if (isFromPrimaryExp && varSymbol.valueType.shape().size() == indexList.size()) {
@@ -816,9 +816,10 @@ public class Visitor {
                 case MINU -> {
                     result.value = -result.value;
                     if (!irManager.isInGlobal()) {
-                        unaryExp.operand = irManager.allocTempOperand(new IRType(IRType.IRValueType.I32, false));
-                        if (!result.isConst) { // 常量优化
-                            irManager.addInstruction(new SubInst(unaryExp.operand, IRType.IRValueType.I32, new ConstantOperand(0), unaryExp.unaryExp.operand));
+                        if (result.isConst) {
+                            unaryExp.operand = new ConstantOperand(-result.value);
+                        } else {
+                            unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.unaryExp.operand);
                         }
                     }
                 }
@@ -828,6 +829,7 @@ public class Visitor {
                     } else {
                         result.value = 1;
                     }
+                    unaryExp.operand = irManager.addIcmpInst(IcmpInst.IcmpCond.EQ, new ConstantOperand(0), unaryExp.unaryExp.operand);
                 }
                 default -> throw new IllegalStateException("Unexpected value: " + op);
             }
