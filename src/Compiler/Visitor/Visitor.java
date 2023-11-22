@@ -510,8 +510,13 @@ public class Visitor {
             }
             var newShape = new ArrayList<>(varSymbol.valueType.shape());
             var indexList = new ArrayList<Integer>();
+
+            boolean isConst = varSymbol.isConst; // 如果有下标算不出来，那么就一定为false，否则和 varSymbol.isConst 相同
             for (var exp : lVal.expList) {
                 var result = visit(exp);
+                if (!result.isConst) {
+                    isConst = false;
+                }
                 indexList.add(result.value);
                 newShape.remove(0);
             }
@@ -552,7 +557,7 @@ public class Visitor {
                 }
             }
 
-            return new VisitResult(new ValueType(varSymbol.valueType.type(), newShape), varSymbol.isConst, varSymbol.getValue(indexList)); // 如果是变量的话getValue()会直接返回一个0
+            return new VisitResult(new ValueType(varSymbol.valueType.type(), newShape), isConst, varSymbol.getValue(indexList)); // 如果是变量的话getValue()会直接返回一个0
         }
     }
 
