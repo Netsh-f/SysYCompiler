@@ -6,6 +6,7 @@ import Compiler.LLVMIR.Global.GlobalStr;
 import Compiler.LLVMIR.Global.LabelManager;
 import Compiler.LLVMIR.Instructions.*;
 import Compiler.LLVMIR.Instructions.Quadruple.*;
+import Compiler.LLVMIR.Operand.ConstantOperand;
 import Compiler.LLVMIR.Operand.GlobalOperand;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
@@ -155,7 +156,7 @@ public class IRManager {
         return tempOperand;
     }
 
-    public Operand addGetElementPtrInst(List<Integer> newShape, Operand ptrOperand, List<Integer> indexList) {
+    public Operand addGetElementPtrInst(List<Integer> newShape, Operand ptrOperand, List<Operand> indexList) {
         var tempOperand = allocTempOperand(new IRType(ptrOperand.irType.irValueType, true, newShape));
         var getElementPtrInst = new GetElementPtrInst(tempOperand, ptrOperand, indexList);
         addInstruction(getElementPtrInst);
@@ -191,7 +192,10 @@ public class IRManager {
         for (int i = 0; i < indexList.size(); i++) {
             if (beginIndex < indexList.get(i)) {
                 var operand = addGlobalStr(formatString.substring(beginIndex, indexList.get(i))); // 到%的前一个
-                var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, Arrays.asList(0, 0));
+                var indexOperandList = new ArrayList<Operand>();
+                indexOperandList.add(new ConstantOperand(0));
+                indexOperandList.add(new ConstantOperand(0));
+                var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, indexOperandList);
                 addInstruction(new CallPutStrInst(tempOperand));
             }
             addInstruction(new CallPutIntInst(expOperandList.get(i)));
@@ -199,7 +203,10 @@ public class IRManager {
         }
         if (beginIndex < formatString.length()) { // 如果还有剩的
             var operand = addGlobalStr(formatString.substring(beginIndex));
-            var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, Arrays.asList(0, 0));
+            var indexOperandList = new ArrayList<Operand>();
+            indexOperandList.add(new ConstantOperand(0));
+            indexOperandList.add(new ConstantOperand(0));
+            var tempOperand = addGetElementPtrInst(new ArrayList<>(), operand, indexOperandList);
             addInstruction(new CallPutStrInst(tempOperand));
         }
     }

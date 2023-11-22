@@ -201,16 +201,16 @@ public class Visitor {
     }
 
     private Operand initValForConstAndVar(List<Integer> values, VarSymbol varSymbol) {
-        var indexes = new ArrayList<Integer>();
+        var indexeOperandList = new ArrayList<Operand>();
         int size = 1;
         for (int i = varSymbol.valueType.shape().size() - 1; i >= 0; i--) {
             var len = varSymbol.valueType.shape().get(i);
-            indexes.add((values.size() - 1) / size % len);
+            indexeOperandList.add(new ConstantOperand((values.size() - 1) / size % len));
             size *= len;
         }
-        indexes.add(0);
-        Collections.reverse(indexes);
-        return irManager.addGetElementPtrInst(new ArrayList<>(), varSymbol.operand, indexes);
+        indexeOperandList.add(new ConstantOperand(0));
+        Collections.reverse(indexeOperandList);
+        return irManager.addGetElementPtrInst(new ArrayList<>(), varSymbol.operand, indexeOperandList);
     }
 
     private void visit(ConstInitVal constInitVal, List<Integer> shape, List<Integer> values, VarSymbol varSymbol) {
@@ -524,13 +524,13 @@ public class Visitor {
                 // 如果 varSymbol 是数组
 
                 // 计算 getElementPtr 的 index
-                var getElementPtrIndexList = new ArrayList<Integer>();
+                var getElementPtrIndexList = new ArrayList<Operand>();
                 if (!varSymbol.isFuncFParam) { // 如果不是函数参数，就在一开始加一个0（将[2 x [2 x i32]]变成[2 x i32]*），如果是函数形参，那么就不要加这个0，因为其本来就是[2 x i32]*
-                    getElementPtrIndexList.add(0);
+                    getElementPtrIndexList.add(new ConstantOperand(0));
                 }
-                getElementPtrIndexList.addAll(indexList); // 把 Exp 的索引加进去
+                lVal.expList.forEach(exp -> getElementPtrIndexList.add(exp.operand)); // 把 Exp 的索引加进去
                 if (indexList.size() < varSymbol.valueType.shape().size()) { // 后面补0
-                    getElementPtrIndexList.add(0);
+                    getElementPtrIndexList.add(new ConstantOperand(0));
                 }
 
                 // 计算新 shape
