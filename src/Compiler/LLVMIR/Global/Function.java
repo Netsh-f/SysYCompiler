@@ -45,7 +45,7 @@ public class Function extends GlobalDecl {
             }
         });
         this.returnIRType = returnIRType;
-        this.ident = "@" + ident;
+        this.ident = ident;
     }
 
     public void finalizeProcessing() {
@@ -103,7 +103,7 @@ public class Function extends GlobalDecl {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\ndefine dso_local ").append(this.returnIRType).append(" ").
+        stringBuilder.append("\ndefine dso_local ").append(this.returnIRType).append(" @").
                 append(this.ident).append("(");
         for (int i = 0; i < paramOperandList.size(); i++) {
             if (i != 0) {
@@ -112,7 +112,7 @@ public class Function extends GlobalDecl {
             var operand = paramOperandList.get(i);
             stringBuilder.append(operand.irType).append(" ").append(operand);
         }
-        stringBuilder.append(") #0 {\n");
+        stringBuilder.append(") {\n");
         basicBlockList.forEach(stringBuilder::append);
         stringBuilder.append("}\n");
         return stringBuilder.toString();

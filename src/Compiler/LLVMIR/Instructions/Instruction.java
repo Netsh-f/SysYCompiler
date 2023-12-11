@@ -12,7 +12,6 @@ public class Instruction extends Value {
     public TempOperand resultOperand;
 
     public Instruction(Operand resultOperand) {
-
     }
 
     public Instruction() {

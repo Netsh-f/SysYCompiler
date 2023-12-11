@@ -1,12 +1,9 @@
-import Compiler.LLVMIR.Global.Function;
 import Compiler.Lexer.Lexer;
+import Compiler.MIPS.MipsGen;
 import Compiler.Parser.Parser;
 import Compiler.Visitor.Visitor;
 import Utils.FileHelper;
 import Utils.OutputHelper;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class Compiler {
@@ -20,5 +17,7 @@ public class Compiler {
         var irModule = new Visitor(compUnit).run();
         OutputHelper.ErrorOutput();
         OutputHelper.llvmIROutput(irModule);
+        var mipsModule = new MipsGen(irModule).run();
+        OutputHelper.mipsOutput(mipsModule);
     }
 }

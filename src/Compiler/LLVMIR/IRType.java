@@ -8,6 +8,7 @@ import Compiler.SymbolManager.Symbol.ValueType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class IRType {
     public enum IRValueType {
@@ -29,6 +30,14 @@ public class IRType {
     public IRValueType irValueType;
     public boolean isPtr;
     public List<Integer> shape;
+
+    public int getLength() {
+        AtomicInteger size = new AtomicInteger(1);
+        if (!shape.isEmpty()) {
+            shape.forEach(l -> size.updateAndGet(v -> v * l));
+        }
+        return size.get();
+    }
 
 
     public IRType(IRValueType irValueType, boolean isPtr) {

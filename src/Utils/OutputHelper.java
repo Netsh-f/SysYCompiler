@@ -6,6 +6,7 @@ package Utils;
 
 import Compiler.LLVMIR.IRModule;
 import Compiler.Lexer.Token;
+import Compiler.MIPS.MipsModule;
 import Utils.Error.ErrorData;
 import Utils.Error.ErrorType;
 
@@ -18,6 +19,7 @@ public class OutputHelper {
     private static final String outputFileName = "output.txt";
     private static final String llvmIROutputFileName = "llvm_ir.txt";
     private static final String errorOutputFileName = "error.txt";
+    private static final String mipsOutputFileName = "mips.txt";
 
     public static boolean parserOutputSwitch = true;
     private static final StringBuilder parserOutputStringBuilder = new StringBuilder();
@@ -28,6 +30,11 @@ public class OutputHelper {
 
     private OutputHelper() {
     }
+
+    public static void mipsOutput(MipsModule mipsModule) {
+        FileHelper.writeToFile(mipsOutputFileName, mipsModule.toString());
+    }
+
 
     public static void llvmIROutput(IRModule irModule) {
         FileHelper.writeToFile(llvmIROutputFileName, irModule.toString());
