@@ -4,6 +4,7 @@
 */
 package Compiler.LLVMIR.Instructions;
 
+import Compiler.LLVMIR.Operand.ConstantOperand;
 import Compiler.LLVMIR.Operand.Operand;
 import Compiler.LLVMIR.Operand.TempOperand;
 

@@ -4,5 +4,18 @@
 */
 package Compiler.MIPS.text;
 
-public class SwInst extends MipsInst{
+import Compiler.MIPS.regs.Reg;
+
+public class SwInst extends MipsInst {
+    public Reg valueReg;
+    public MipsAddr mipsAddr;
+
+    public SwInst(Reg valueReg, MipsAddr mipsAddr) {
+        this.valueReg = valueReg;
+        this.mipsAddr = mipsAddr;
+    }
+
+    public String toString() {
+        return "sw " + valueReg + ", " + mipsAddr + "\n";
+    }
 }

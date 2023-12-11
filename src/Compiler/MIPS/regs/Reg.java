@@ -6,10 +6,12 @@ package Compiler.MIPS.regs;
 
 public class Reg {
     public String label;
-    public boolean isAvailable;
 
     public Reg(String label) {
         this.label = label;
-        this.isAvailable = true;
+    }
+
+    public String toString() {
+        return "$" + label;
     }
 }

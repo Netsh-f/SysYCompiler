@@ -4,5 +4,17 @@
 */
 package Compiler.MIPS.text;
 
-public class LiInst extends MipsInst{
+import Compiler.MIPS.regs.Reg;
+
+public class LiInst extends MipsInst {
+    public int immediateNum;
+
+    public LiInst(Reg resultReg, int immediateNum) {
+        this.resultReg = resultReg;
+        this.immediateNum = immediateNum;
+    }
+
+    public String toString() {
+        return "li " + resultReg + ", " + immediateNum + "\n";
+    }
 }

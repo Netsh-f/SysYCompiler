@@ -6,9 +6,13 @@ package Compiler.LLVMIR.Operand;
 
 import Compiler.LLVMIR.IRType;
 import Compiler.LLVMIR.Value;
+import Compiler.MIPS.regs.Reg;
+import Compiler.MIPS.text.MipsAddr;
 
 public class Operand extends Value {
     public IRType irType;
+    public Reg reg;
+    public MipsAddr mipsAddr;
 
     public Operand() {
     }

@@ -4,5 +4,8 @@
 */
 package Compiler.MIPS.text;
 
+import Compiler.MIPS.regs.Reg;
+
 public class MipsInst {
+    public Reg resultReg;
 }

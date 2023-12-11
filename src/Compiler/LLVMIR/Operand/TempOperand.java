@@ -8,12 +8,10 @@ import Compiler.LLVMIR.IRType;
 
 public class TempOperand extends Operand {
     public int label;
-    public int sp;
 
     public TempOperand(int label, IRType irType) {
         this.label = label;
         this.irType = irType;
-        sp = 0;
     }
 
     public String toString() {
