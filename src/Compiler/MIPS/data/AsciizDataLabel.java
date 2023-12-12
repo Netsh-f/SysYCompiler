@@ -10,7 +10,7 @@ public class AsciizDataLabel extends DataLabel {
 
     public AsciizDataLabel(String label, String value) {
         this.label = label;
-        this.value = value;
+        this.value = value.replaceAll("\\\\0A", "\\\\n");
     }
 
     public String toString() {

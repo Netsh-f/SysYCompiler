@@ -25,6 +25,7 @@ public class MipsModule {
         stringBuilder.append(".data\n");
         dataLabelList.forEach(dataLabel -> stringBuilder.append("    ").append(dataLabel));
         stringBuilder.append(".text\n");
+        stringBuilder.append("    j main\n    nop\n");
         mipsBlockList.forEach(stringBuilder::append);
         return stringBuilder.toString();
     }

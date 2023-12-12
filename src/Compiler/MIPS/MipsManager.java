@@ -7,30 +7,56 @@ package Compiler.MIPS;
 import Compiler.MIPS.data.AsciizDataLabel;
 import Compiler.MIPS.data.WordDataLabel;
 import Compiler.MIPS.regs.Reg;
+import Compiler.MIPS.regs.RegManager;
 import Compiler.MIPS.text.*;
 import Compiler.MIPS.text.Quadruple.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MipsManager {
-    private MipsModule mipsModule;
+    private final MipsModule mipsModule;
     private MipsBlock currentMipsBlock;
-    private int spOff;
-    private List<Reg> tRegList;
-    private int tRegNum;
-
-    public Reg spReg;
 
     public MipsManager() {
         this.mipsModule = new MipsModule();
-        this.spOff = 0;
-        this.tRegList = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            tRegList.add(new Reg("t" + i));
-        }
-        tRegNum = 0;
-        spReg = new Reg("sp");
+    }
+
+    public void addNopInst() {
+        addInst(new NopInst());
+    }
+
+    public void addLaInst(Reg resultReg, MipsAddr mipsAddr) {
+        addInst(new LaInst(resultReg, mipsAddr));
+    }
+
+    public void addJalInst(String label) {
+        addInst(new JalInst(label));
+        addNopInst();
+    }
+
+    public void addJrInst(Reg addrReg) {
+        addInst(new JrInst(addrReg));
+        addNopInst();
+    }
+
+    public Reg addMoveInst(Reg valueReg) {
+        var resultReg = allocTReg();
+        addInst(new MoveInst(resultReg, valueReg));
+        return resultReg;
+    }
+
+    public void addMoveInst(Reg resultReg, Reg valueReg) {
+        addInst(new MoveInst(resultReg, valueReg));
+    }
+
+    public void addAddiuInst(AddiuInst addiuInst) {
+        addInst(addiuInst);
+    }
+
+    public Reg addAddiuInst(Reg reg, int immediateNum) {
+        var resultReg = allocTReg();
+        addInst(new AddiuInst(resultReg, reg, immediateNum));
+        return resultReg;
     }
 
     public Reg addSneInst(Reg reg1, Reg reg2) {
@@ -71,10 +97,12 @@ public class MipsManager {
 
     public void addJInst(String label) {
         addInst(new JInst(label));
+        addNopInst();
     }
 
     public void addBnezInst(Reg reg, String label) {
         addInst(new BnezInst(reg, label));
+        addNopInst();
     }
 
     public Reg addRemInst(Reg reg1, Reg reg2) {
@@ -113,6 +141,10 @@ public class MipsManager {
         return resultReg;
     }
 
+    public void addLwInst(Reg resultReg, MipsAddr mipsAddr) {
+        addInst(new LwInst(resultReg, mipsAddr));
+    }
+
     public Reg addLwInst(MipsAddr mipsAddr) {
         var resultReg = allocTReg();
         addInst(new LwInst(resultReg, mipsAddr));
@@ -133,15 +165,16 @@ public class MipsManager {
         return reg;
     }
 
-    public Reg allocTReg() {
-        tRegNum = (tRegNum + 1) % 4;
-        return tRegList.get(tRegNum);
+    public void addLiInst(Reg resultReg, int immediateNum) {
+        addInst(new LiInst(resultReg, immediateNum));
     }
 
-    public MipsAddr allocMemory(int word) {
-        int ret = spOff;
-        spOff += word * 4;
-        return new MipsAddr(-ret, spReg);
+    public void addSyscallInst() {
+        addInst(new SyscallInst());
+    }
+
+    public Reg allocTReg() {
+        return RegManager.allocTReg();
     }
 
     public void addMipsBlock(String ident) {

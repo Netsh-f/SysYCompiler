@@ -21,7 +21,7 @@ public class Function extends GlobalDecl {
     public String ident;
     public IRType returnIRType;
     private final LabelManager labelManager;
-    private final List<Operand> paramOperandList;
+    public final List<Operand> paramOperandList;
 
 
     public Function(IRType returnIRType, String ident, List<VarSymbol> varSymbolList) {

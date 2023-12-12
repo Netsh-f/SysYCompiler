@@ -11,11 +11,11 @@ public class GlobalOperand extends Operand {
     public String ident;
 
     public GlobalOperand(String ident, IRType irType) {
-        this.ident = "@"+ident;
+        this.ident = ident;
         this.irType = irType;
     }
 
     public String toString() {
-        return ident;
+        return "@" + ident;
     }
 }

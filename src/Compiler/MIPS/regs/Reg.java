@@ -6,9 +6,11 @@ package Compiler.MIPS.regs;
 
 public class Reg {
     public String label;
+    public int number;
 
-    public Reg(String label) {
+    public Reg(String label, int number) {
         this.label = label;
+        this.number = number;
     }
 
     public String toString() {

@@ -180,7 +180,7 @@ public class IRManager {
         var newString = string.replaceAll("\\\\n", "\\\\0A");
         var shape = new ArrayList<Integer>();
         shape.add(2 * string.length() - newString.length());
-        var operand = new GlobalOperand("str" + strLabelManager.allocLabel(), new IRType(IRType.IRValueType.I8, true, shape));
+        var operand = new GlobalOperand("sysystr" + strLabelManager.allocLabel(), new IRType(IRType.IRValueType.I8, true, shape));
         module.globalDeclList.add(0, new GlobalStr(operand, newString));
         return operand;
     }
