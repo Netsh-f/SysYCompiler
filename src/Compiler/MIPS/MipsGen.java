@@ -19,7 +19,6 @@ import Compiler.MIPS.text.Quadruple.AddiuInst;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MipsGen {
@@ -79,7 +78,7 @@ public class MipsGen {
                             function.paramOperandList.get(j).reg = RegManager.regMap.get("a" + j);
                         }
                         for (int j = 4; j < function.paramOperandList.size(); j++) {
-                            function.paramOperandList.get(j).reg = mipsManager.addLwInst(new MipsAddr(stackSize, (j - 4) * 4, RegManager.regMap.get("fp")));
+                            function.paramOperandList.get(j).reg = mipsManager.addLwInst(new MipsAddr(stackSize, 64 + (j - 4) * 4, RegManager.regMap.get("fp")));
                         }
                     } else {
                         mipsManager.addMipsBlock(function.ident + "__" + basicBlock.label);
@@ -148,9 +147,25 @@ public class MipsGen {
                                 if (paramOperand instanceof ConstantOperand constantOperand) {
                                     paramReg = mipsManager.addLiInst(constantOperand.intNumber);
                                 }
-                                mipsManager.addSwInst(paramReg, new MipsAddr(new AtomicInteger(0), (j - 4) * 4, RegManager.regMap.get("sp")));
+                                mipsManager.addSwInst(paramReg, new MipsAddr(new AtomicInteger(0), 64 + (j - 4) * 4, RegManager.regMap.get("sp")));
                             }
+
+//                            for (int j = 0; j < 16; j++) { // 保存现场
+//                                if (j < 8) {
+//                                    mipsManager.addSwInst(RegManager.regMap.get("t" + j), new MipsAddr(new AtomicInteger(0), i * 4, RegManager.regMap.get("sp")));
+//                                } else {
+//                                    mipsManager.addSwInst(RegManager.regMap.get("s" + (j - 8)), new MipsAddr(new AtomicInteger(0), i * 4, RegManager.regMap.get("sp")));
+//                                }
+//                            }
                             mipsManager.addJalInst(callInst.function.ident);
+//                            for (int j = 0; j < 16; j++) {
+//                                if (j < 8) {
+//                                    mipsManager.addLwInst(RegManager.regMap.get("t" + j), new MipsAddr(new AtomicInteger(0), i * 4, RegManager.regMap.get("sp")));
+//                                } else {
+//                                    mipsManager.addLwInst(RegManager.regMap.get("s" + (j - 8)), new MipsAddr(new AtomicInteger(0), i * 4, RegManager.regMap.get("sp")));
+//                                }
+//                            }
+
                             if (callInst.resultOperand != null) {
                                 callInst.resultOperand.reg = mipsManager.addMoveInst(RegManager.regMap.get("v0"));
                             }
@@ -158,7 +173,7 @@ public class MipsGen {
                     }
                 }
                 spOff -= Math.max(maxFuncParamNum - 4, 0) * 4;
-                int finalStackSize = -spOff + 16; // 多开了一点
+                int finalStackSize = -spOff + 64; // 保存现场用
                 stackSize.updateAndGet(x -> x + finalStackSize);
                 startAddiuInst.immediateNum = -finalStackSize;
                 endAddiuInst.immediateNum = finalStackSize;
@@ -292,7 +307,7 @@ public class MipsGen {
         if (addInst.operand2 instanceof ConstantOperand constantOperand) {
             reg2 = mipsManager.addLiInst(constantOperand.intNumber);
         }
-        addInst.resultOperand.reg = mipsManager.addAddInst(reg1, reg2);
+        addInst.resultOperand.reg = mipsManager.addAdduInst(reg1, reg2);
     }
 
     private void visit(LoadInst loadInst) {
@@ -323,13 +338,13 @@ public class MipsGen {
                 resultReg = mipsManager.addMulInst(indexReg, 4);
             } else if (i == 1) {
                 var tReg = mipsManager.addMulInst(indexReg, 4 * getElementPtrInst.ptrOperand.irType.shape.get(0));
-                resultReg = mipsManager.addAddInst(tReg, resultReg);
+                resultReg = mipsManager.addAdduInst(tReg, resultReg);
             }
         }
         if (label != null) {
             getElementPtrInst.resultOperand.mipsAddr = new MipsAddr(label, resultReg);
         } else {
-            resultReg = mipsManager.addAddInst(resultReg, RegManager.regMap.get("fp"));
+            resultReg = mipsManager.addAdduInst(resultReg, RegManager.regMap.get("fp"));
             getElementPtrInst.resultOperand.mipsAddr = new MipsAddr(stackSize, getElementPtrInst.ptrOperand.mipsAddr.off, resultReg);
         }
     }

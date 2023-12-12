@@ -6,12 +6,12 @@ package Compiler.MIPS.text.Quadruple;
 
 import Compiler.MIPS.regs.Reg;
 
-public class MipsAddInst extends QuadrupleInst {
-    public MipsAddInst(Reg resultReg, Reg reg1, Reg reg2) {
+public class MipsAdduInst extends QuadrupleInst {
+    public MipsAdduInst(Reg resultReg, Reg reg1, Reg reg2) {
         super(resultReg, reg1, reg2);
     }
 
     public String toString() {
-        return "add " + resultReg + ", " + reg1 + ", " + reg2 + "\n";
+        return "addu " + resultReg + ", " + reg1 + ", " + reg2 + "\n";
     }
 }

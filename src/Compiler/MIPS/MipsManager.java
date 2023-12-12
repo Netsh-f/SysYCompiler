@@ -129,9 +129,9 @@ public class MipsManager {
         return resultReg;
     }
 
-    public Reg addAddInst(Reg reg1, Reg reg2) {
+    public Reg addAdduInst(Reg reg1, Reg reg2) {
         var resultReg = allocTReg();
-        addInst(new MipsAddInst(resultReg, reg1, reg2));
+        addInst(new MipsAdduInst(resultReg, reg1, reg2));
         return resultReg;
     }
 
