@@ -31,7 +31,7 @@ public class CallInst extends Instruction {
         if (resultOperand != null) {
             stringBuilder.append(resultOperand).append(" = ");
         }
-        stringBuilder.append("call ").append(function.returnIRType).append(" ").append(function.ident).append("(");
+        stringBuilder.append("call ").append(function.returnIRType).append(" @").append(function.ident).append("(");
         for (int i = 0; i < paramOperandList.size(); i++) {
             if (i != 0) {
                 stringBuilder.append(", ");
