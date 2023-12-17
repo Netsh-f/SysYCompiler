@@ -48,7 +48,7 @@ public class Function extends GlobalDecl {
         this.ident = ident;
     }
 
-    public void finalizeProcessing() {
+    public void finalizeProcessing(boolean optimizationSwitch) {
         Queue<BasicBlock> basicBlockQueue = new ArrayDeque<>();
         var startBasicBlock = basicBlockList.get(0);
         startBasicBlock.isReachable = true;
@@ -79,7 +79,7 @@ public class Function extends GlobalDecl {
         Iterator<BasicBlock> iterator = basicBlockList.iterator();
         while (iterator.hasNext()) {
             var basicBlock = iterator.next();
-            if (!basicBlock.isReachable) {
+            if (!basicBlock.isReachable && optimizationSwitch) {
                 iterator.remove();
                 continue;
             }

@@ -4,7 +4,6 @@
 */
 package Compiler.LLVMIR.Operand;
 
-import Compiler.LLVMIR.Global.GlobalConst;
 import Compiler.LLVMIR.IRType;
 
 public class GlobalOperand extends Operand {

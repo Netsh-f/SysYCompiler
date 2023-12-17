@@ -6,7 +6,6 @@ package Compiler.MIPS;
 
 import Compiler.MIPS.data.DataLabel;
 import Compiler.MIPS.text.MipsBlock;
-import Compiler.Parser.Nodes.Block;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -19,6 +19,7 @@ import Compiler.MIPS.text.Quadruple.AddiuInst;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MipsGen {
@@ -126,7 +127,7 @@ public class MipsGen {
                             mipsManager.addLwInst(RegManager.regMap.get("fp"), new MipsAddr(stackSize, -8, RegManager.regMap.get("sp")));
                             mipsManager.addLwInst(RegManager.regMap.get("ra"), new MipsAddr(stackSize, -4, RegManager.regMap.get("sp")));
                             mipsManager.addAddiuInst(endAddiuInst);
-                            if (function.ident == "main") {
+                            if (Objects.equals(function.ident, "main")) {
                                 mipsManager.addLiInst(RegManager.regMap.get("v0"), 10);
                                 mipsManager.addSyscallInst();
                             } else {

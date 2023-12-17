@@ -32,19 +32,21 @@ public class Visitor {
     private final CompUnit unit;
     private final SymbolManager symbolManager;
     private ValueTypeEnum curFuncReturnType = ValueTypeEnum.VOID;
+    public boolean optimizationSwitch = true;
 
     // LLVM IR attr
     private final IRManager irManager;
 
-    public Visitor(CompUnit compUnit) {
+    public Visitor(CompUnit compUnit, boolean optimizationSwitch) {
         this.unit = compUnit;
         this.symbolManager = new SymbolManager();
         this.irManager = new IRManager();
+        this.optimizationSwitch = optimizationSwitch;
     }
 
     public IRModule run() {
         visit(this.unit);
-        irManager.finalizeProcessing();
+        irManager.finalizeProcessing(optimizationSwitch);
         return irManager.getModule();
     }
 
@@ -78,7 +80,9 @@ public class Visitor {
         }
 
         addExp.operand = addExp.mulExpList.get(0).operand;
-        if (!isConst) { // 常量优化
+        if (isConst && optimizationSwitch) { // 常量优化
+            addExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
+        } else {
             for (int i = 0; i < addExp.opLexTypeList.size(); i++) {
                 var mulExp = addExp.mulExpList.get(1 + i);
                 addExp.operand = switch (addExp.opLexTypeList.get(i)) {
@@ -87,8 +91,6 @@ public class Visitor {
                     default -> throw new IllegalStateException("Unexpected value: " + addExp.opLexTypeList.get(i));
                 };
             }
-        } else {
-            addExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
         }
 
         return new VisitResult(valueType, isConst, value);
@@ -606,7 +608,9 @@ public class Visitor {
         }
 
         mulExp.operand = mulExp.unaryExpList.get(0).operand;
-        if (!isConst) { // 常量优化
+        if (isConst && optimizationSwitch) { // 常量优化
+            mulExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
+        } else {
             for (int i = 0; i < mulExp.opLexTypeList.size(); i++) {
                 var unaryExp = mulExp.unaryExpList.get(1 + i);
                 mulExp.operand = switch (mulExp.opLexTypeList.get(i)) {
@@ -616,8 +620,6 @@ public class Visitor {
                     default -> throw new IllegalStateException("Unexpected value: " + mulExp.opLexTypeList.get(i));
                 };
             }
-        } else {
-            mulExp.operand = new ConstantOperand(value); // 如果能计算出来，那么直接开一个常量操作数，且只需要在addExp开就够了
         }
 
         return new VisitResult(valueType, isConst, value);
@@ -830,7 +832,7 @@ public class Visitor {
                 case MINU -> {
                     result.value = -result.value;
                     if (!irManager.isInGlobal()) {
-                        if (result.isConst) {
+                        if (result.isConst && optimizationSwitch) {
                             unaryExp.operand = new ConstantOperand(result.value);
                         } else {
                             unaryExp.operand = irManager.addSubInst(new ConstantOperand(0), unaryExp.unaryExp.operand);

@@ -14,7 +14,7 @@ public class Compiler {
 //        OutputHelper.LexerOutput(tokens);
         var compUnit = new Parser(tokens).run();
         OutputHelper.ParserOutput();
-        var irModule = new Visitor(compUnit).run();
+        var irModule = new Visitor(compUnit, true).run();
         OutputHelper.ErrorOutput();
         OutputHelper.llvmIROutput(irModule);
         var mipsModule = new MipsGen(irModule).run();

@@ -53,12 +53,6 @@ public class MipsManager {
         addInst(addiuInst);
     }
 
-    public Reg addAddiuInst(Reg reg, int immediateNum) {
-        var resultReg = allocTReg();
-        addInst(new AddiuInst(resultReg, reg, immediateNum));
-        return resultReg;
-    }
-
     public Reg addSneInst(Reg reg1, Reg reg2) {
         var resultReg = allocTReg();
         addInst(new SneInst(resultReg, reg1, reg2));

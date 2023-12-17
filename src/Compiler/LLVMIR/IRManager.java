@@ -29,10 +29,10 @@ public class IRManager {
         this.strLabelManager = new LabelManager();
     }
 
-    public void finalizeProcessing() {
+    public void finalizeProcessing(boolean optimizationSwitch) {
         this.module.globalDeclList.forEach(globalDecl -> {
             if (globalDecl instanceof Function function) {
-                function.finalizeProcessing();
+                function.finalizeProcessing(optimizationSwitch);
             }
         });
     }
