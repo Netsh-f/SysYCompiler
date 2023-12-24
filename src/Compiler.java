@@ -16,7 +16,9 @@ public class Compiler {
         OutputHelper.ParserOutput();
         var irModule = new Visitor(compUnit, true).run();
         OutputHelper.ErrorOutput();
-        OutputHelper.llvmIROutput(irModule);
+        if (OutputHelper.noError) {
+            OutputHelper.llvmIROutput(irModule);
+        }
 //        var mipsModule = new MipsGen(irModule).run();
 //        OutputHelper.mipsOutput(mipsModule);
     }

@@ -28,6 +28,8 @@ public class OutputHelper {
     private static final Map<ErrorType, String> errorTypeCodeMap = initErrorTypeCodeMap();
     private static final List<ErrorData> errorDataList = new ArrayList<>();
 
+    public static boolean noError = true;
+
     private OutputHelper() {
     }
 
@@ -75,6 +77,7 @@ public class OutputHelper {
     }
 
     public static void addError(ErrorType type, int lineNum, String info) {
+        noError = false;
         if (errorOutputSwitch) {
             errorDataList.add(new ErrorData(type, lineNum, info));
         }
