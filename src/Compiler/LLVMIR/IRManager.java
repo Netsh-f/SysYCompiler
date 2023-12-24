@@ -13,6 +13,7 @@ import Compiler.LLVMIR.Operand.TempOperand;
 import Compiler.SymbolManager.Symbol.FuncSymbol;
 import Compiler.SymbolManager.Symbol.ValueTypeEnum;
 import Compiler.SymbolManager.Symbol.VarSymbol;
+import Utils.OutputHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -186,6 +187,9 @@ public class IRManager {
     }
 
     public void addCallPutInst(String formatString, List<Integer> indexList, List<Operand> expOperandList) {
+        if (!OutputHelper.noError) {
+            return;
+        }
         // indexList: the index of '%' for "%d"
         int beginIndex = 0;
         for (int i = 0; i < indexList.size(); i++) {

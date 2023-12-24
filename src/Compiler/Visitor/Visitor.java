@@ -307,9 +307,11 @@ public class Visitor {
         }
         var returnValueType = visit(funcDef.funcType());
 
+        boolean redefined = false;
         var identToken = funcDef.ident().token();
-        if (symbolManager.isFuncSymbolDefined(identToken.content())) {
+        if (symbolManager.isFuncSymbolDefined(identToken.content()) || symbolManager.isVarSymbolDefined(identToken.content())) {
             OutputHelper.addError(ErrorType.IDENT_REDEFINED, identToken.lineNum(), "function redefinition of '" + identToken.content() + "'");
+            redefined = true;
         }
 
         symbolManager.createSymbolTable();
@@ -320,7 +322,11 @@ public class Visitor {
         }
 
         var funcSymbol = new FuncSymbol(returnValueType, varSymbolList);
-        symbolManager.addFuncSymbol(identToken.content(), funcSymbol);
+
+        if (!redefined) {
+            symbolManager.addFuncSymbol(identToken.content(), funcSymbol);
+        }
+
         curFuncReturnType = returnValueType; // 记录当前函数的返回类型，为检查return语句错误做准备
 
         irManager.addFunctionDecl(curFuncReturnType, identToken.content(), varSymbolList, funcSymbol);
@@ -866,6 +872,7 @@ public class Visitor {
                 // 有实参
                 var resultList = visit(unaryExp.funcRParams, funcRParamOperandList);
                 if (funcSymbol.paramVarSymbolList.size() != resultList.size()) {
+
                     // 参数数量错误
                     OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "too few or many arguments to function '" + identToken.content() + "'");
                 } else {
@@ -879,6 +886,12 @@ public class Visitor {
                                     "expected '" + funcFParamValueType.type() + funcFParamValueType.shape() + "' but argument is of type '" + funcRParamValueType.type() + funcRParamValueType.shape() + "'");
                         }
                     }
+                }
+            } else {
+                // 没有实参
+                if (!funcSymbol.paramVarSymbolList.isEmpty()) {
+                    //但是函数有参数
+                    OutputHelper.addError(ErrorType.FUNC_PARAM_NUM_ERROR, identToken.lineNum(), "too few or many arguments to function '" + identToken.content() + "'");
                 }
             }
 
